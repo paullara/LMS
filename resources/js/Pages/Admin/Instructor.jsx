@@ -13,15 +13,7 @@ export default function Instructor({ instructors = [] }) {
             <Head title="Instructor" />
 
             <div className="py-4 max-w-7xl mx-auto px-4">
-                <div className="flex justify-between items-center mb-6">
-                    <h1></h1>
-                    <Link
-                        href={route("instructor.manage")}
-                        className="text-white bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
-                    >
-                        + Add New
-                    </Link>
-                </div>
+                <div className="flex justify-between items-center mb-6"></div>
 
                 <div className="bg-white shadow overflow-hidden sm:rounded-lg">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -53,7 +45,7 @@ export default function Instructor({ instructors = [] }) {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {instructor.profile_picture ? (
                                             <img
-                                                src={`/profiles/${instructor.profile_picture}`}
+                                                src={`/${instructor.profile_picture}`}
                                                 className="h-12 w-12 rounded-full object-cover"
                                             />
                                         ) : (

@@ -13,17 +13,23 @@ export default function InstructorLayout({ header, children }) {
     return (
         <div className="min-h-screen bg-red-100 flex">
             <aside
-                className={`bg-black border-r w-64 space-y-6 px-4 py-6 absolute inset-y-0 left-0 transform rounded-r-md ${
+                className={`bg-white border-r w-64 space-y-6 px-4 py-6 absolute inset-y-0 left-0 transform rounded-r-md ${
                     sidebarOpen ? "translate-x-0" : "-translate-x-full"
                 } md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-50`}
             >
                 <div className="flex items-center justify-center mb-6">
-                    <Link href="/">
-                        <h1 className="text-4xl font-semibold tracking-widest text-white">
-                            E D U X
-                        </h1>
-                        {/* <ApplicationLogo className="h-10 w-auto text-indigo-600" /> */}
-                    </Link>
+                    <div className="flex items-center justify-start mb-6 p-4">
+                        <Link href="/" className="flex items-center gap-2">
+                            <img
+                                src="/logo/psu.png"
+                                alt="Logo"
+                                className="h-15 w-12"
+                            />
+                            <h1 className="text-bluepsu text-2xl tracking-wide font-semibold">
+                                <span className="text-gold">PSU</span>Learn
+                            </h1>
+                        </Link>
+                    </div>
                     <button
                         className="md:hidden"
                         onClick={() => setSidebarOpen(false)}
@@ -37,35 +43,35 @@ export default function InstructorLayout({ header, children }) {
                         // active={route().current("instructor.dashboard")}
                         className="flex items-center gap-2"
                     >
-                        <h1 className="text-white text-lg">Dashboard</h1>
+                        <h1 className="text-black text-lg">Dashboard</h1>
                     </Link>
                     <Link
                         href={route("admin.instructor")}
                         // active={route().current("instructor.classList")}
                         className="flex items-center gap-2"
                     >
-                        <h1 className="text-white text-lg">Instructor</h1>
+                        <h1 className="text-black text-lg">Instructor</h1>
                     </Link>
                     <Link
                         href={route("classroom.view")}
                         // active={route().current("instructor.classList")}
                         className="flex items-center gap-2"
                     >
-                        <h1 className="text-white text-lg">Class</h1>
+                        <h1 className="text-black text-lg">Class</h1>
                     </Link>
                     <Link
                         href={route("admin.profile")}
                         // active={route().current("admin.profile")}
                         className="flex items-center gap-2"
                     >
-                        <h1 className="text-white text-lg">Profile</h1>
+                        <h1 className="text-black text-lg">Profile</h1>
                     </Link>
                     <Link
                         href={route("students.account")}
                         // active={route().current("admin.profile")}
                         className="flex items-center gap-2"
                     >
-                        <h1 className="text-white text-lg">Students</h1>
+                        <h1 className="text-black text-lg">Students</h1>
                     </Link>
                 </nav>
             </aside>

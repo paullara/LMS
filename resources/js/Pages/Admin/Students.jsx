@@ -56,8 +56,8 @@ export default function Students() {
                 </div>
             )}
             {!loading && students.length > 0 && (
-                <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                    <table className="min-h-full divide-y divide-gray-200">
+                <div className="w-full bg-white shadow overflow-hidden sm:rounded-lg">
+                    <table className="w-full min-h-full divide-y divide-gray-200">
                         <thead className="bg-gray-100">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">

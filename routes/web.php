@@ -80,14 +80,14 @@ Route::middleware(['auth', 'instructor'])->group(function () {
     Route::get('/instructor/classroom/{id}', [InstructorController::class, 'show'])->name('instructor.classroom.show');
     Route::get('/classroom/show/{id}', [InstructorController::class, 'testClassroom'])->name('test.classroom');
     Route::post('/quiz', [QuizController::class, 'store'])->name('quiz.store');
-    Route::get('/classroom/{id}/members', [InstructorController::class, 'getMembers']);
     Route::get('/students/search', [InstructorController::class, 'searchStudents']);
     Route::post('/instructor/{id}/add-member', [InstructorController::class, 'addStudentToClassroom']);
     Route::delete('/classroom/{classId}/remove-student/{studentId}', [InstructorController::class, 'removeStudent']);
     Route::delete('/quiz/{quizId}', [InstructorController::class, 'removeQuiz']);
-    Route::get('/student/{id}/grade', [AverageController::class, 'grade']);
+    
 });
-
+Route::get('/classroom/{id}/members', [InstructorController::class, 'getMembers']);
+Route::get('/student/{id}/grade', [AverageController::class, 'grade']);
 Route::get('/threads/{id}', [InstructorController::class, 'getThreads']);
 Route::post('/classroom/{classroom}/materials', [MaterialController::class, 'store'])->name('materials.store');
 Route::post('/classroom/{classroom}/assignments', [InstructorController::class, 'storeAss'])->name('assignments.store');

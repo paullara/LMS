@@ -27,6 +27,7 @@ export default function Assignments({ classId }) {
                 if (!classId) return;
                 const res = await axios.get(`/fetch/assignments/${classId}`);
                 setAssignments(res.data.assignments);
+                console.log("ass:", res.data.assignments);
             } catch (error) {
                 console.error("Error fetching assignments.", error);
             }
@@ -72,11 +73,7 @@ export default function Assignments({ classId }) {
         if (status === "ongoing") {
             return assignments.filter((a) => new Date(a.due_date) >= now);
         } else if (status === "pastDue") {
-            return assignments.filter(
-                (a) =>
-                    new Date(a.due_date) < now &&
-                    (!a.submissions || a.submissions.length === 0)
-            );
+            return assignments.filter((a) => new Date(a.due_date) < now);
         } else if (status === "completed") {
             return assignments.filter(
                 (a) => a.submissions && a.submissions.length > 0

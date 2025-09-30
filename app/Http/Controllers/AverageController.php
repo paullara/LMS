@@ -18,6 +18,13 @@ class AverageController extends Controller
     $quizzes = Quiz::with(['submissions', 'questions'])
         ->where('class_id', $id)
         ->get();
+    
+    $mcq = Quiz::with(['submissions', 'questions'])
+        ->where('type', 'objective')
+        ->where('class_id', $id)
+        ->get();
+
+        // dd($quizzes);
 
     $assignments = Assignment::with('submissions')
         ->where('class_id', $id)
