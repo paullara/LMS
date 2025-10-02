@@ -287,7 +287,7 @@ export default function Quiz({ classId }) {
                                     View
                                 </button>
                                 <button
-                                    className="mt-3 px-4 py-1 bg-red-500 text-white rounded text-sm"
+                                    className="mt-3 ml-4 px-4 py-1 bg-red-500 text-white rounded text-sm"
                                     onClick={() => handleRemoveQuiz(quiz.id)}
                                 >
                                     Delete
