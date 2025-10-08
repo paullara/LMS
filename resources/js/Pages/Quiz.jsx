@@ -7,13 +7,7 @@ export default function Quiz({ classId }) {
     const [studentAnswers, setStudentAnswers] = useState({});
     const [timeLeft, setTimeLeft] = useState(null);
     const [quizSubmissions, setQuizSubmissions] = useState([]);
-    const [finishedQuizIds, setFinishQuizIds] = useState(
-        quizSubmissions
-            ? quizSubmissions
-                  .filter((sub) => sub.status === "finished" && sub.quiz_id)
-                  .map((sub) => sub.quiz_id)
-            : []
-    );
+    const [finishedQuizIds, setFinishQuizIds] = useState([]);
 
     // Fetch quizzes
     useEffect(() => {
@@ -28,7 +22,7 @@ export default function Quiz({ classId }) {
         fetchQuizzes();
     }, [classId]);
 
-    // fetch submissions
+    // Fetch submissions and auto-refresh
     useEffect(() => {
         const fetchQuizSubmission = async () => {
             try {
@@ -38,10 +32,19 @@ export default function Quiz({ classId }) {
                 console.error("Error fetching submissions", error);
             }
         };
+
         fetchQuizSubmission();
         const interval = setInterval(fetchQuizSubmission, 2000);
         return () => clearInterval(interval);
-    });
+    }, []);
+
+    // Update finished quiz IDs whenever submissions update
+    useEffect(() => {
+        const finishedIds = quizSubmissions
+            .filter((sub) => sub.status === "finished" && sub.quiz_id)
+            .map((sub) => sub.quiz_id);
+        setFinishQuizIds(finishedIds);
+    }, [quizSubmissions]);
 
     // Open quiz
     const handleOpenQuiz = (quiz) => {
@@ -116,8 +119,6 @@ export default function Quiz({ classId }) {
                 <ul className="space-y-4">
                     {quizList.map((quiz) => {
                         const isFinished = finishedQuizIds.includes(quiz.id);
-                        const quesCount = quiz.questions.length;
-
                         const now = new Date();
                         const quizEndTime = new Date(quiz.end_time);
                         const isExpired = now > quizEndTime;
@@ -135,7 +136,11 @@ export default function Quiz({ classId }) {
                                 </p>
 
                                 <button
-                                    className="mt-2 px-4 py-1 rounded text-md bg-blue-500 text-white"
+                                    className={`mt-2 px-4 py-1 rounded text-md text-white ${
+                                        isFinished || isExpired
+                                            ? "bg-gray-400 cursor-not-allowed"
+                                            : "bg-blue-500"
+                                    }`}
                                     onClick={() => handleOpenQuiz(quiz)}
                                     disabled={isFinished || isExpired}
                                 >
