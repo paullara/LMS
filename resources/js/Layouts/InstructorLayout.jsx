@@ -22,7 +22,7 @@ export default function InstructorLayout({ header, children }) {
                             alt="Logo"
                             className="h-15 w-12"
                         />
-                        <h1 className="text-bluepsu text-2xl tracking-wide font-semibold">
+                        <h1 className="text-bluepsu text-2xl tracking-wide font-medium">
                             <span className="text-gold">PSU</span>Learn
                         </h1>
                     </Link>
@@ -49,11 +49,20 @@ export default function InstructorLayout({ header, children }) {
                     </Link>
 
                     <Link
-                        href={route("instructor.profile")}
+                        // href={route("instructor.profile")}
+                        className="flex items-center gap-2 mb-6"
+                    >
+                        <h1 className="text-profile text-lg font-medium">
+                            Task
+                        </h1>
+                    </Link>
+
+                    <Link
+                        // href={route("instructor.profile")}
                         className="flex items-center gap-2"
                     >
                         <h1 className="text-profile text-lg font-medium">
-                            Profile
+                            Student Progress
                         </h1>
                     </Link>
                 </div>
@@ -61,19 +70,18 @@ export default function InstructorLayout({ header, children }) {
                 {/* Sticky Profile + Logout (sticks to sidebar bottom) */}
                 <div className="sticky bottom-0 bg-white border-t p-4">
                     <NavLink
-                        href={route("profile.edit")}
-                        active={route().current("profile.edit")}
-                        className="w-full px-3 py-2 rounded-md text-sm font-medium"
+                        href={route("instructor.profile")}
+                        className="w-full px-3 py-2 rounded-md text-sm font-medium text-lg"
                     >
-                        Profile
+                        <h1 className="text-lg">Profile</h1>
                     </NavLink>
                     <Link
                         href={route("logout")}
                         method="post"
                         as="button"
-                        className="w-full px-3 py-2 text-left rounded-md text-sm font-medium text-black hover:text-red-800"
+                        className="w-full px-3 py-2 text-left rounded-md text-sm font-medium text-black hover:text-red-800 "
                     >
-                        Log Out
+                        <h1 className="text-lg">Log Out</h1>
                     </Link>
                 </div>
             </aside>
@@ -82,23 +90,21 @@ export default function InstructorLayout({ header, children }) {
             <div className="flex-1 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between bg-white border-b">
-                    <div className="flex items-center p-4">
+                    <div className="flex items-center p-6">
                         {route().current("instructor.dashboard") && (
-                            <h1 className="text-4xl font-semibold">
+                            <h1 className="text-xl font-medium tracking-wide">
                                 Dashboard
                             </h1>
                         )}
 
                         {route().current("test.list") && (
-                            <h1 className="text-4xl font-semibold">My Class</h1>
+                            <h1 className="text-xl font-medium">My Class</h1>
                         )}
                         {route().current("instructor.profile") && (
-                            <h1 className="text-4xl font-semibold">Profile</h1>
+                            <h1 className="text-xl font-medium">Profile</h1>
                         )}
                         {route().current("test.classroom") && (
-                            <h1 className="text-4xl font-semibold">
-                                Classroom
-                            </h1>
+                            <h1 className="text-xl font-medium">Classroom</h1>
                         )}
                     </div>
                     <header className="bg-white h-16 px-4 flex items-center justify-between">

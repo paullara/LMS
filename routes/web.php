@@ -9,6 +9,7 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\ClassMaterialController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ThreadController;
 use App\Http\Controllers\Auth\RegisterInstructorController;
 use App\Http\Controllers\SubmissionController;
@@ -98,6 +99,10 @@ Route::post('/threads/{thread}/replies', [ThreadController::class, 'storeThreadR
 Route::post('/replies', [ThreadController::class, 'storeReply']);
 Route::get('/quizzes/{id}', [QuizController::class, 'getQuizzes']);
 Route::get('/submissions/quiz', [QuizController::class, 'submissions']);
+Route::get('/instructors/json', [DashboardController::class, 'getInstructor']);
+Route::get('/students/json', [DashboardController::class, 'getStudents']);
+Route::get('/classes/json', [DashboardController::class, 'getClasses']);
+Route::get('/tasks/json', [DashboardController::class, 'getTasks']);
 
 Route::middleware('auth')->group(function () {
     Route::post('/instructor/classroom/{id}/add-student', [InstructorController::class, 'addStudent'])->name('instructor.classroom.addStudent');
