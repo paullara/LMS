@@ -63,7 +63,7 @@ export default function Materials({ classId }) {
             <form
                 onSubmit={handleAddMaterial}
                 encType="multipart/form-data"
-                className="p-6 bg-white rounded-xl shadow-md space-y-4"
+                className="h-full p-6 bg-white rounded-xl shadow-md space-y-4"
             >
                 <h2 className="text-lg font-bold text-gray-700">
                     Upload Material

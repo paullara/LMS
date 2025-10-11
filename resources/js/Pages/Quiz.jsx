@@ -6,6 +6,8 @@ export default function Quiz({ classId }) {
     const [selectedQuiz, setSelectedQuiz] = useState(null);
     const [studentAnswers, setStudentAnswers] = useState({});
     const [timeLeft, setTimeLeft] = useState(null);
+    const [quizSubmissions, setQuizSubmissions] = useState([]);
+    const [finishedQuizIds, setFinishQuizIds] = useState([]);
 
     // Fetch quizzes
     useEffect(() => {
@@ -19,6 +21,30 @@ export default function Quiz({ classId }) {
         };
         fetchQuizzes();
     }, [classId]);
+
+    // Fetch submissions and auto-refresh
+    useEffect(() => {
+        const fetchQuizSubmission = async () => {
+            try {
+                const res = await axios.get("/submissions/quiz");
+                setQuizSubmissions(res.data.quizSubmissions);
+            } catch (error) {
+                console.error("Error fetching submissions", error);
+            }
+        };
+
+        fetchQuizSubmission();
+        const interval = setInterval(fetchQuizSubmission, 2000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Update finished quiz IDs whenever submissions update
+    useEffect(() => {
+        const finishedIds = quizSubmissions
+            .filter((sub) => sub.status === "finished" && sub.quiz_id)
+            .map((sub) => sub.quiz_id);
+        setFinishQuizIds(finishedIds);
+    }, [quizSubmissions]);
 
     // Open quiz
     const handleOpenQuiz = (quiz) => {
@@ -91,26 +117,42 @@ export default function Quiz({ classId }) {
                 <div className="text-gray-500">No quizzes yet.</div>
             ) : (
                 <ul className="space-y-4">
-                    {quizList.map((quiz) => (
-                        <li
-                            key={quiz.id}
-                            className="border rounded p-4 bg-gray-50"
-                        >
-                            <h3 className="font-semibold text-purple-700">
-                                {quiz.title}
-                            </h3>
-                            <p className="text-gray-500 text-sm mb-1">
-                                {quiz.description}
-                            </p>
+                    {quizList.map((quiz) => {
+                        const isFinished = finishedQuizIds.includes(quiz.id);
+                        const now = new Date();
+                        const quizEndTime = new Date(quiz.end_time);
+                        const isExpired = now > quizEndTime;
 
-                            <button
-                                className="mt-2 px-4 py-1 rounded text-md bg-blue-500 text-white"
-                                onClick={() => handleOpenQuiz(quiz)}
+                        return (
+                            <li
+                                key={quiz.id}
+                                className="border rounded p-4 bg-gray-50"
                             >
-                                Open
-                            </button>
-                        </li>
-                    ))}
+                                <h3 className="font-semibold text-purple-700">
+                                    {quiz.title}
+                                </h3>
+                                <p className="text-gray-500 text-sm mb-1">
+                                    {quiz.description}
+                                </p>
+
+                                <button
+                                    className={`mt-2 px-4 py-1 rounded text-md text-white ${
+                                        isFinished || isExpired
+                                            ? "bg-gray-400 cursor-not-allowed"
+                                            : "bg-blue-500"
+                                    }`}
+                                    onClick={() => handleOpenQuiz(quiz)}
+                                    disabled={isFinished || isExpired}
+                                >
+                                    {isFinished
+                                        ? "Finished"
+                                        : isExpired
+                                        ? "Expired"
+                                        : "Open"}
+                                </button>
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
 

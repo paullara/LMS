@@ -227,7 +227,7 @@ export default function Classroom({
 
     return (
         <AuthenticatedLayout>
-            <div className="px-4 py-6 min-h-screen">
+            <div className="min-h-screen">
                 {/* Header */}
                 <div className="border-b pb-4 mb-6">
                     <h1 className="text-3xl font-bold text-purple-700">
@@ -248,243 +248,29 @@ export default function Classroom({
 
                 {/* Tabs */}
                 <div className="flex space-x-6 mb-4 border-b">
-                    {[
-                        "general",
-                        "materials",
-                        "assignments",
-                        "quiz",
-                        "test-quiz",
-                    ].map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`py-2 px-4 text-sm font-semibold border-b-2 ${
-                                activeTab === tab
-                                    ? "border-purple-600 text-purple-600"
-                                    : "border-transparent text-gray-500 hover:text-purple-600"
-                            }`}
-                        >
-                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                    ))}
+                    {["general", "materials", "assignments", "quiz"].map(
+                        (tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`py-2 px-4 text-sm font-semibold border-b-2 ${
+                                    activeTab === tab
+                                        ? "border-purple-600 text-purple-600"
+                                        : "border-transparent text-gray-500 hover:text-purple-600"
+                                }`}
+                            >
+                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            </button>
+                        )
+                    )}
                 </div>
 
                 {/* Tab Content */}
                 <div className="mt-4 space-y-6">
-                    {activeTab === "test-quiz" && (
+                    {activeTab === "quiz" && (
                         <Quiz classId={classroom.id}></Quiz>
                     )}
-                    {activeTab === "quiz" && (
-                        <div className="w-full mx-auto">
-                            <h2 className="text-lg font-bold mb-2">
-                                Existing Quizzes
-                            </h2>
-                            {quizList.length === 0 ? (
-                                <div className="text-gray-500">
-                                    No quizzes yet.
-                                </div>
-                            ) : (
-                                <ul className="space-y-4">
-                                    {quizList.map((quiz) => {
-                                        const isFinished =
-                                            finishedQuizIds.includes(quiz.id);
-                                        const quesCount = quiz.questions.length;
 
-                                        const now = new Date();
-                                        const quizEndTime = new Date(
-                                            quiz.end_time
-                                        );
-                                        const isExpired = now > quizEndTime;
-                                        return (
-                                            <li
-                                                key={quiz.id}
-                                                className="border rounded p-4 bg-gray-50"
-                                            >
-                                                <div className="flex justify-between items-center">
-                                                    <div className="font-semibold text-purple-700">
-                                                        <h3>{quiz.title}</h3>
-                                                    </div>
-                                                    <p className="text-gray-500 text-sm mb-1">
-                                                        {quiz.description}
-                                                    </p>
-                                                </div>
-                                                {quizSubmissions
-                                                    .filter(
-                                                        (sub) =>
-                                                            sub.quiz_id ===
-                                                            quiz.id
-                                                    )
-                                                    .map((sub) => (
-                                                        <h1
-                                                            key={sub.id}
-                                                            className="text-green-700 font-semibold"
-                                                        >
-                                                            Score: {sub.score}{" "}
-                                                            <span className="text-black">
-                                                                /{" "}
-                                                                {`${quesCount}`}
-                                                            </span>
-                                                        </h1>
-                                                    ))}
-
-                                                {isExpired ? (
-                                                    <p className="text-red-500 font-medium mt-2">
-                                                        This quiz is no longer
-                                                        available.
-                                                    </p>
-                                                ) : (
-                                                    <button
-                                                        className={`px-4 py-1 rounded text-md ${
-                                                            isFinished
-                                                                ? "bg-gray-400 cursor-not-allowed"
-                                                                : "bg-blue-500 text-white"
-                                                        }`}
-                                                        onClick={() =>
-                                                            !isFinished &&
-                                                            setSelectedQuiz(
-                                                                quiz
-                                                            )
-                                                        }
-                                                        disabled={isFinished}
-                                                    >
-                                                        {isFinished
-                                                            ? "Already Finished"
-                                                            : "Open"}
-                                                    </button>
-                                                )}
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            )}
-                            {selectedQuiz && (
-                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 overflow-y-auto max-h-[90vh]">
-                                        {/* Close Button */}
-                                        <button
-                                            className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                            onClick={() => {
-                                                setSelectedQuiz(null);
-                                                setStudentAnswers({});
-                                            }}
-                                        >
-                                            ✕
-                                        </button>
-
-                                        {/* Header */}
-                                        <div className="border-b pb-4 mb-6">
-                                            <h2 className="text-2xl font-bold text-purple-700">
-                                                {selectedQuiz.title}
-                                            </h2>
-                                            <p className="text-gray-500">
-                                                {selectedQuiz.description}
-                                            </p>
-                                        </div>
-
-                                        {/* Timer */}
-                                        {timeLeft !== null && (
-                                            <div className="mb-6 text-lg font-semibold text-red-600 bg-red-100 rounded-lg px-4 py-2 inline-block">
-                                                ⏳ Time Remaining:{" "}
-                                                {formatTime(timeLeft)}
-                                            </div>
-                                        )}
-
-                                        {/* Questions */}
-                                        <form
-                                            onSubmit={(e) => {
-                                                e.preventDefault();
-                                                handleSubmitAnswers();
-                                            }}
-                                            className="space-y-6"
-                                        >
-                                            {selectedQuiz.questions.map(
-                                                (question, idx) => (
-                                                    <div
-                                                        key={question.id}
-                                                        className="border rounded-lg p-4 bg-gray-50 shadow-sm"
-                                                    >
-                                                        <p className="font-medium text-gray-800 mb-3">
-                                                            {idx + 1}.{" "}
-                                                            {
-                                                                question.question_text
-                                                            }
-                                                        </p>
-                                                        <div className="space-y-2">
-                                                            {question.choices.map(
-                                                                (choice) => (
-                                                                    <label
-                                                                        key={
-                                                                            choice.label
-                                                                        }
-                                                                        className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-gray-100 transition"
-                                                                    >
-                                                                        <input
-                                                                            type="radio"
-                                                                            name={`question_${question.id}`}
-                                                                            value={
-                                                                                choice.label
-                                                                            }
-                                                                            checked={
-                                                                                studentAnswers[
-                                                                                    question
-                                                                                        .id
-                                                                                ] ===
-                                                                                choice.label
-                                                                            }
-                                                                            onChange={() =>
-                                                                                handleSelectChoice(
-                                                                                    question.id,
-                                                                                    choice.label
-                                                                                )
-                                                                            }
-                                                                            className="text-purple-600 focus:ring-purple-500"
-                                                                        />
-                                                                        <span className="text-gray-700">
-                                                                            <span className="font-semibold">
-                                                                                {
-                                                                                    choice.label
-                                                                                }
-
-                                                                                .
-                                                                            </span>{" "}
-                                                                            {
-                                                                                choice.text
-                                                                            }
-                                                                        </span>
-                                                                    </label>
-                                                                )
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )
-                                            )}
-
-                                            {/* Submit */}
-                                            <button
-                                                type="submit"
-                                                className={`w-full py-3 rounded-lg font-semibold transition ${
-                                                    finishedQuizIds.includes(
-                                                        selectedQuiz.id
-                                                    )
-                                                        ? "bg-gray-400 cursor-not-allowed text-white"
-                                                        : "bg-green-600 hover:bg-green-700 text-white shadow"
-                                                }`}
-                                                disabled={finishedQuizIds.includes(
-                                                    selectedQuiz.id
-                                                )}
-                                            >
-                                                {finishedQuizIds.includes(
-                                                    selectedQuiz.id
-                                                )
-                                                    ? "Already Finished"
-                                                    : "Submit Quiz"}
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
                     {activeTab === "general" && (
                         <Thread classId={classroom.id} />
                     )}

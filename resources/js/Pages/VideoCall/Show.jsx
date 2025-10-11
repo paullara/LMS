@@ -2,6 +2,16 @@ import React, { useEffect, useRef, useState } from "react";
 import Peer from "peerjs";
 import axios from "axios";
 import { usePage } from "@inertiajs/react";
+import {
+    Video,
+    VideoOff,
+    Mic,
+    MicOff,
+    MonitorUp,
+    MonitorX,
+    PhoneOff,
+    Users,
+} from "lucide-react";
 
 export default function VideoCall({ videoCall }) {
     const { auth } = usePage().props;
@@ -12,25 +22,22 @@ export default function VideoCall({ videoCall }) {
 
     const [peerId, setPeerId] = useState(null);
     const [sharing, setSharing] = useState(false);
+    const [cameraOn, setCameraOn] = useState(false);
+    const [micOn, setMicOn] = useState(false);
     const [participants, setParticipants] = useState([]);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const currentUser = auth.user;
 
-    // STEP 1: Initialize Peer and set up receiving streams
+    // --- Initialize PeerJS ---
     useEffect(() => {
         const myPeer = new Peer();
 
-        myPeer.on("open", (id) => {
-            setPeerId(id);
-            console.log("My Peer ID:", id);
-        });
-
+        myPeer.on("open", (id) => setPeerId(id));
         myPeer.on("call", (call) => {
             call.answer();
 
             call.on("stream", (remoteStream) => {
-                console.log("Received remote stream:", remoteStream);
-
                 if (myVideoRef.current) {
                     myVideoRef.current.srcObject = remoteStream;
                 }
@@ -38,33 +45,79 @@ export default function VideoCall({ videoCall }) {
         });
 
         peerInstance.current = myPeer;
-
-        return () => {
-            myPeer.destroy();
-        };
+        return () => myPeer.destroy();
     }, []);
 
-    // STEP 2: Join the call
+    // --- Join & Register ---
     useEffect(() => {
-        axios
-            .post(`/video-call/${videoCall.id}/join`)
-            .then(() => console.log("Joined video call."))
-            .catch((err) => console.error("Failed to join video call:", err));
+        axios.post(`/video-call/${videoCall.id}/join`).catch(() => {});
     }, []);
 
-    // STEP 3: Register peer ID after it's available
     useEffect(() => {
-        if (!peerId || !videoCall) return;
-
+        if (!peerId) return;
         axios
             .post(`/video-call/${videoCall.id}/register-peer`, {
                 peer_id: peerId,
             })
-            .then(() => console.log("Registered peer ID"))
-            .catch((err) => console.error("Failed to register peer ID:", err));
+            .catch(() => {});
     }, [peerId]);
 
-    // STEP 4: Start screen sharing and call participants if host
+    // --- Fetch participants ---
+    useEffect(() => {
+        const fetchParticipants = async () => {
+            const res = await axios.get(
+                `/video-call/${videoCall.id}/participants`
+            );
+            setParticipants(res.data.participants);
+        };
+        fetchParticipants();
+        const interval = setInterval(fetchParticipants, 1500);
+        return () => clearInterval(interval);
+    }, []);
+
+    // --- Camera & Mic ---
+    const toggleCamera = async () => {
+        if (cameraOn) {
+            streamRef.current
+                ?.getTracks()
+                .filter((t) => t.kind === "video")
+                .forEach((t) => t.stop());
+            setCameraOn(false);
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: micOn,
+            });
+            streamRef.current = stream;
+            myVideoRef.current.srcObject = stream;
+            setCameraOn(true);
+        } catch (err) {
+            console.error("Camera error:", err);
+        }
+    };
+
+    const toggleMic = async () => {
+        if (!micOn && !cameraOn) {
+            // if no camera stream exists yet
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+            });
+            streamRef.current = stream;
+            myVideoRef.current.srcObject = stream;
+        }
+
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => {
+                if (track.kind === "audio") track.enabled = !micOn;
+            });
+        }
+        setMicOn(!micOn);
+    };
+
+    // --- Screen Sharing ---
     const startSharing = async () => {
         try {
             const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -72,49 +125,30 @@ export default function VideoCall({ videoCall }) {
                 audio: true,
             });
 
-            if (myVideoRef.current) {
-                myVideoRef.current.srcObject = stream;
-            }
-
+            myVideoRef.current.srcObject = stream;
             streamRef.current = stream;
             setSharing(true);
 
             stream.getTracks().forEach((track) => {
-                track.onended = () => {
-                    stopSharing();
-                };
+                track.onended = () => stopSharing();
             });
 
-            // Host sends the stream to all participants
+            // Send to participants
             if (auth.user.id === videoCall.host_id) {
-                try {
-                    const res = await axios.get(
-                        `/video-call/${videoCall.id}/participants`
-                    );
-                    res.data.participants.forEach((p) => {
-                        if (p.user.id !== auth.user.id && p.peer_id) {
-                            const call = peerInstance.current.call(
-                                p.peer_id,
-                                stream
-                            );
-                            console.log(
-                                "Calling:",
-                                p.user.firstname,
-                                p.peer_id
-                            );
-
-                            call.on("error", (err) => {
-                                console.error(
-                                    "Call error with",
-                                    p.peer_id,
-                                    err
-                                );
-                            });
-                        }
-                    });
-                } catch (err) {
-                    console.error("Failed to call participants", err);
-                }
+                const res = await axios.get(
+                    `/video-call/${videoCall.id}/participants`
+                );
+                res.data.participants.forEach((p) => {
+                    if (p.user.id !== auth.user.id && p.peer_id) {
+                        const call = peerInstance.current.call(
+                            p.peer_id,
+                            stream
+                        );
+                        call.on("error", (err) =>
+                            console.error("Call error with", p.peer_id, err)
+                        );
+                    }
+                });
             }
         } catch (err) {
             console.error("Screen share error:", err);
@@ -124,19 +158,13 @@ export default function VideoCall({ videoCall }) {
     const stopSharing = () => {
         if (streamRef.current) {
             streamRef.current.getTracks().forEach((track) => track.stop());
-            streamRef.current = null;
         }
-
-        if (myVideoRef.current) {
-            myVideoRef.current.srcObject = null;
-        }
-
+        streamRef.current = null;
+        myVideoRef.current.srcObject = null;
         setSharing(false);
     };
 
     const handleEndCall = async () => {
-        if (!videoCall || !videoCall.id) return;
-
         try {
             await axios.post(`/video-call/${videoCall.id}/end`);
             window.location.href = `/classroom/show/${videoCall.classroom.id}`;
@@ -145,53 +173,25 @@ export default function VideoCall({ videoCall }) {
         }
     };
 
-    useEffect(() => {
-        const fetchParticipants = async () => {
-            try {
-                const res = await axios.get(
-                    `/video-call/${videoCall.id}/participants`
-                );
-                setParticipants(res.data.participants);
-            } catch (err) {
-                console.error("Failed to fetch participants", err);
-            }
-        };
-
-        fetchParticipants();
-        const interval = setInterval(fetchParticipants, 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    // student auto redirect back
+    // --- Auto redirect students when call ends ---
     useEffect(() => {
         if (auth.user.id === videoCall.host_id) return;
-
-        const checkCallStatus = async () => {
-            try {
-                const res = await axios.get(
-                    `/video-call/check/${videoCall.classroom.id}`
-                );
-                const activeCall = res.data.videoCall;
-
-                console.log("Test: ", activeCall.status);
-
-                if (!activeCall || activeCall.status === "ended") {
-                    window.location.href = `/classroom/${videoCall.classroom.id}`;
-                }
-            } catch (error) {
-                console.error("Failed to check the video call status", error);
+        const interval = setInterval(async () => {
+            const res = await axios.get(
+                `/video-call/check/${videoCall.classroom.id}`
+            );
+            const activeCall = res.data.videoCall;
+            if (!activeCall || activeCall.status === "ended") {
+                window.location.href = `/classroom/${videoCall.classroom.id}`;
             }
-        };
-
-        const interval = setInterval(checkCallStatus, 1000);
-
+        }, 2000);
         return () => clearInterval(interval);
     }, []);
 
+    // --- Host rebroadcast ---
     useEffect(() => {
         if (
-            auth.user.id !== videoCall.host_id || // only host should do this
-            !sharing ||
+            auth.user.id !== videoCall.host_id ||
             !streamRef.current ||
             !participants.length
         )
@@ -201,126 +201,138 @@ export default function VideoCall({ videoCall }) {
             if (
                 p.user.id !== auth.user.id &&
                 p.peer_id &&
-                !calledPeers.current.has(p.peer_id) // only call if not called before
+                !calledPeers.current.has(p.peer_id)
             ) {
                 const call = peerInstance.current.call(
                     p.peer_id,
                     streamRef.current
                 );
-                console.log("Calling NEW peer:", p.user.firstname, p.peer_id);
-
-                call.on("error", (err) => {
-                    console.error("Call error with", p.peer_id, err);
-                });
-
-                // mark as called
+                call.on("error", (err) =>
+                    console.error("Call error with", p.peer_id, err)
+                );
                 calledPeers.current.add(p.peer_id);
             }
         });
     }, [participants]);
 
+    // --- UI ---
     return (
-        <div className="h-screen flex flex-col bg-[#f3f4f6]">
-            {/* Top Header */}
-            <header className="bg-[#252c3e] text-white px-6 py-4 flex justify-between items-center shadow">
-                <div className="text-lg font-semibold">
-                    Classroom: {videoCall?.classroom?.name || "Loading..."}
+        <div className="h-screen flex flex-col bg-[#0f1117] text-white">
+            {/* Header */}
+            <header className="px-6 py-4 flex justify-between items-center border-b border-gray-800">
+                <div className="text-lg font-semibold tracking-wide">
+                    {videoCall?.classroom?.name || "Classroom"}
                 </div>
-                <div className="text-sm">Peer ID: {peerId || "Loading..."}</div>
-                {auth.user.id === videoCall.host_id && (
-                    <button
-                        onClick={handleEndCall}
-                        className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-white font-medium"
-                    >
-                        End Call
-                    </button>
-                )}
+                <div className="text-sm text-gray-400">
+                    Peer ID: {peerId || "Connecting..."}
+                </div>
             </header>
 
-            {/* Main Content */}
             <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar - Participants */}
-                <aside className="w-64 bg-white border-r p-4 overflow-y-auto">
-                    <h2 className="text-lg font-semibold mb-4 text-[#374151]">
-                        Participants
-                    </h2>
-                    <ul className="space-y-2">
-                        {participants
-                            .filter((p) => p.user.id !== videoCall.host_id)
-                            .map((p) => (
+                {/* Sidebar */}
+                {sidebarOpen && (
+                    <aside className="w-64 bg-[#1b1f2b] border-r border-gray-800 p-4 overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="font-semibold text-gray-200">
+                                Participants
+                            </h2>
+                            <button
+                                onClick={() => setSidebarOpen(false)}
+                                className="text-gray-400 hover:text-gray-200 text-sm"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <ul className="space-y-3">
+                            {participants.map((p) => (
                                 <li
                                     key={p.id}
-                                    className="text-gray-700 text-sm"
+                                    className={`flex items-center space-x-2 text-sm ${
+                                        p.user.id === currentUser.id
+                                            ? "text-blue-400"
+                                            : "text-gray-300"
+                                    }`}
                                 >
                                     <img
                                         src={`/${p.user.profile_picture}`}
-                                        alt="profile"
-                                        className="inline-block w-6 h-6 rounded-full mr-2 object-cover border"
+                                        className="w-6 h-6 rounded-full border border-gray-600"
                                     />
-                                    {p.user.firstname} {p.user.lastname}
-                                    {p.user.id === currentUser.id && " (You)"}
+                                    <span>
+                                        {p.user.firstname} {p.user.lastname}
+                                        {p.user.id === currentUser.id &&
+                                            " (You)"}
+                                    </span>
                                 </li>
                             ))}
-                    </ul>
-                    {auth.user.id !== videoCall.host_id && (
+                        </ul>
+                    </aside>
+                )}
+
+                {/* Main Video */}
+                <main className="flex-1 flex flex-col items-center justify-center relative">
+                    <video
+                        ref={myVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="rounded-xl bg-black w-full max-w-5xl aspect-video object-cover shadow-lg"
+                    />
+                    <div className="absolute bottom-10 flex gap-6 bg-[#1b1f2b]/80 px-6 py-3 rounded-full shadow-xl backdrop-blur-sm border border-gray-700">
                         <button
-                            onClick={async () => {
-                                try {
-                                    await axios.post(
-                                        `/video-call/${videoCall.id}/leave`
-                                    );
-                                    window.location.href = `/classroom/${videoCall.classroom.id}`;
-                                } catch (error) {
-                                    console.error(
-                                        "Failed to leave call.",
-                                        error
-                                    );
-                                }
-                            }}
-                            className="bg-red-500 text-white px-4 py-2 rounded mt-4 w-full"
+                            onClick={toggleCamera}
+                            className={`p-3 rounded-full ${
+                                cameraOn
+                                    ? "bg-green-600 hover:bg-green-700"
+                                    : "bg-gray-700 hover:bg-gray-600"
+                            }`}
                         >
-                            Leave Call
+                            {cameraOn ? (
+                                <Video size={20} />
+                            ) : (
+                                <VideoOff size={20} />
+                            )}
                         </button>
-                    )}
-                </aside>
 
-                {/* Main Video Section */}
-                <main className="flex-1 p-6 flex flex-col justify-center items-center relative">
-                    <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg w-full max-w-5xl aspect-video flex items-center justify-center">
-                        <video
-                            ref={myVideoRef}
-                            autoPlay
-                            muted
-                            className="w-full h-full object-contain bg-black"
-                        />
-                    </div>
-                    <p className="mt-2 text-sm text-gray-600">
-                        {auth.user.id === videoCall.host_id
-                            ? "You are sharing your screen"
-                            : "Instructor is sharing the screen"}
-                    </p>
+                        <button
+                            onClick={toggleMic}
+                            className={`p-3 rounded-full ${
+                                micOn
+                                    ? "bg-green-600 hover:bg-green-700"
+                                    : "bg-gray-700 hover:bg-gray-600"
+                            }`}
+                        >
+                            {micOn ? <Mic size={20} /> : <MicOff size={20} />}
+                        </button>
 
-                    {/* Action Buttons */}
-                    <div className="absolute bottom-6 flex gap-4">
-                        {auth.user.id === videoCall.host_id && (
-                            <>
-                                {!sharing ? (
-                                    <button
-                                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full font-medium shadow"
-                                        onClick={startSharing}
-                                    >
-                                        Start Screen Share
-                                    </button>
-                                ) : (
-                                    <button
-                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2 rounded-full font-medium shadow"
-                                        onClick={stopSharing}
-                                    >
-                                        Stop Sharing
-                                    </button>
-                                )}
-                            </>
+                        {!sharing ? (
+                            <button
+                                onClick={startSharing}
+                                className="p-3 rounded-full bg-blue-600 hover:bg-blue-700"
+                            >
+                                <MonitorUp size={20} />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={stopSharing}
+                                className="p-3 rounded-full bg-yellow-500 hover:bg-yellow-600"
+                            >
+                                <MonitorX size={20} />
+                            </button>
                         )}
+
+                        <button
+                            onClick={handleEndCall}
+                            className="p-3 rounded-full bg-red-600 hover:bg-red-700"
+                        >
+                            <PhoneOff size={20} />
+                        </button>
+
+                        <button
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            className="p-3 rounded-full bg-gray-700 hover:bg-gray-600"
+                        >
+                            <Users size={20} />
+                        </button>
                     </div>
                 </main>
             </div>

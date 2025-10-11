@@ -90,7 +90,7 @@ class InstructorController extends Controller
             'subcode' => 'required|string|max:255',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
-            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:10096',
             'yearlevel' => 'required|int',
             'section' => 'required|string|max:25'
         ]);
