@@ -49,7 +49,7 @@ export default function InstructorLayout({ header, children }) {
                     </Link>
 
                     <Link
-                        // href={route("instructor.profile")}
+                        href={route("tasks.index")}
                         className="flex items-center gap-2 mb-6"
                     >
                         <h1 className="text-profile text-lg font-medium">
@@ -106,6 +106,9 @@ export default function InstructorLayout({ header, children }) {
                         {route().current("test.classroom") && (
                             <h1 className="text-xl font-medium">Classroom</h1>
                         )}
+                        {route().current("tasks.index") && (
+                            <h1 className="text-xl font-medium">Manage Task</h1>
+                        )}
                         {route().current("instructor.student.progress") && (
                             <h1 className="text-xl font-medium">
                                 Student Progress Overview
@@ -145,7 +148,7 @@ export default function InstructorLayout({ header, children }) {
                 </div>
 
                 {/* Scrollable children */}
-                <main className="flex-1 overflow-y-auto p-4 bg-white">
+                <main className="flex-1 overflow-y-auto p-2 bg-white">
                     {children}
                 </main>
             </div>

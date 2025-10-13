@@ -95,8 +95,11 @@ class DashboardController extends Controller
             ->where('status', 'pending')
             ->count();
 
+        $taskCount  = Task::where('user_id', $instructor->id)->take(5)->get();
+
         return response()->json([
             'tasks' => $tasks,
+            'taskCount' => $taskCount,
             'dueToday' => $dueToday,
         ]);
     }

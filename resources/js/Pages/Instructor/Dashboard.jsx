@@ -7,6 +7,7 @@ export default function Dashboard() {
     const [instructor, setInstructor] = useState(null);
     const [students, setStudents] = useState([]);
     const [tasks, setTasks] = useState([]);
+    const [taskDisplay, setTaskDisplay] = useState([]);
     const [classes, setClasses] = useState(0);
     const [dueToday, setDueToday] = useState(0);
     const [greeting, setGreeting] = useState("Good day");
@@ -84,6 +85,7 @@ export default function Dashboard() {
             try {
                 const res = await axios.get("/tasks/json");
                 setTasks(res.data.tasks);
+                setTaskDisplay(res.data.taskCount);
                 setDueToday(res.data.dueToday);
             } catch (error) {
                 console.error("Error fetching tasks", error);
@@ -379,28 +381,35 @@ export default function Dashboard() {
                             </div>
                         ) : (
                             <ul className="divide-y divide-gray-100">
-                                {tasks.slice(0, 5).map((task) => (
-                                    <li
-                                        key={task.id}
-                                        className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-blue-50 transition"
-                                    >
-                                        <div className="flex flex-col">
-                                            <h2 className="text-base font-semibold text-gray-800">
-                                                {task.title}
-                                            </h2>
-                                            <p className="text-sm text-gray-500 mt-1">
-                                                {task.description}
-                                            </p>
-                                        </div>
-                                        <span className="text-xs font-medium text-gray-400">
-                                            {task.due_date
-                                                ? new Date(
-                                                      task.due_date
-                                                  ).toLocaleDateString()
-                                                : ""}
-                                        </span>
-                                    </li>
-                                ))}
+                                {tasks
+                                    .sort(
+                                        (a, b) =>
+                                            new Date(b.created_at) -
+                                            new Date(a.created_at)
+                                    ) // latest first
+                                    .slice(0, 4)
+                                    .map((task) => (
+                                        <li
+                                            key={task.id}
+                                            className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-blue-50 transition"
+                                        >
+                                            <div className="flex flex-col">
+                                                <h2 className="text-base font-semibold text-gray-800">
+                                                    {task.title}
+                                                </h2>
+                                                <p className="text-sm text-gray-500 mt-1">
+                                                    {task.description}
+                                                </p>
+                                            </div>
+                                            <span className="text-xs font-medium text-gray-400">
+                                                {task.due_date
+                                                    ? new Date(
+                                                          task.due_date
+                                                      ).toLocaleDateString()
+                                                    : ""}
+                                            </span>
+                                        </li>
+                                    ))}
                             </ul>
                         )}
                     </div>

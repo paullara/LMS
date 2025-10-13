@@ -12,6 +12,7 @@ use App\Http\Controllers\ClassMaterialController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ThreadController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\Auth\RegisterInstructorController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\AdminController;
@@ -111,6 +112,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+    Route::get('/tasks/json', [TaskController::class, 'getTasks']);
+    Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+    Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
 });
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('redirect.google');

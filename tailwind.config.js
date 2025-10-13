@@ -30,6 +30,7 @@ export default {
                 dashboard: "765px",
                 greetings: "300px",
                 picture: "100px",
+                top: "85px",
             },
             width: {
                 container: "300px",
