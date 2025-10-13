@@ -16,6 +16,7 @@ use App\Models\Task;
 use App\Models\Assignment;
 use App\Models\ClassModel;
 use App\Models\QuizSubmission;
+use App\Models\Submission;
 use App\Models\Quiz;
 use Inertia\Inertia;
 
@@ -447,4 +448,67 @@ class InstructorController extends Controller
             'success' => true,
         ]);
     }
+
+    public function studentProgress(Request $request)
+    {
+        $instructor = auth()->user();
+        $classId = $request->query('classId'); // comes from ?classId=123
+
+        // Default to the first class of this instructor
+        if (!$classId) {
+            $classId = $instructor->classes()->first()->id ?? null;
+        }
+
+        if (!$classId) {
+            return Inertia::render('Instructor/StudentProgress', [
+                'students' => [],
+                'classes' => [],
+                'selectedClass' => null,
+            ]);
+        }
+
+        // Fetch all classes for dropdown
+        $classes = $instructor->classes()->select('id', 'name')->get();
+
+        // Fetch students of selected class
+        $students = $instructor->classes()
+            ->where('classes.id', $classId)
+            ->with('students')
+            ->first()
+            ?->students ?? collect();
+
+        $progressData = $students->map(function ($student) use ($classId) {
+            $totalAssignments = Assignment::where('class_id', $classId)->count();
+            $completedAssignments = Submission::where('student_id', $student->id)
+                ->whereHas('assignment', fn($q) => $q->where('class_id', $classId))
+                ->count();
+
+            $totalQuizzes = Quiz::where('class_id', $classId)->count();
+            $completedQuizzes = QuizSubmission::where('student_id', $student->id)
+                ->whereHas('quiz', fn($q) => $q->where('class_id', $classId))
+                ->count();
+
+            $totalTasks = $totalAssignments + $totalQuizzes;
+            $completedTasks = $completedAssignments + $completedQuizzes;
+
+            $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 2) : 0;
+
+            return [
+                'id' => $student->id,
+                'name' => "{$student->firstname} {$student->lastname}",
+                'assignments_completed' => $completedAssignments,
+                'assignments_total' => $totalAssignments,
+                'quizzes_completed' => $completedQuizzes,
+                'quizzes_total' => $totalQuizzes,
+                'progress' => $progress,
+            ];
+        });
+
+        return Inertia::render('Instructor/StudentProgress', [
+            'students' => $progressData,
+            'classes' => $classes,
+            'selectedClass' => $classId,
+        ]);
+    }
+
 }

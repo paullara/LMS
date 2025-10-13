@@ -46,6 +46,8 @@ class DashboardController extends Controller
             ? (($currentMonthCount - $lastMonthCount) / $lastMonthCount) * 100
             : 0;
 
+        $difference = $currentMonthCount - $lastMonthCount;
+
         $students->transform(function ($student) {
         $student->is_online = $student->last_seen_at &&
             \Carbon\Carbon::parse($student->last_seen_at)->gt(now()->subMinutes(2));
@@ -58,6 +60,7 @@ class DashboardController extends Controller
             'current_month' => $currentMonthCount,
             'last_month' => $lastMonthCount,
             'growth' => round($growth, 2),
+            'new_this_month' => $difference > 0 ? $difference : 0,
         ]);
     }
 

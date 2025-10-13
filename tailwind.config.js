@@ -29,6 +29,7 @@ export default {
                 createclass: "52px",
                 dashboard: "765px",
                 greetings: "300px",
+                picture: "100px",
             },
             width: {
                 container: "300px",
@@ -36,6 +37,7 @@ export default {
                 image: "500px",
                 left: "850px",
                 right: "390px",
+                table: "10px",
             },
         },
     },

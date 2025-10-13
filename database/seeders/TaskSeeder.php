@@ -14,21 +14,15 @@ class TaskSeeder extends Seeder
         $tasks = [
             [
                 'user_id' => $userId,
-                'title' => 'Review student projects',
-                'description' => 'Go through each project and leave feedback.',
+                'title' => 'Upload new Assignment',
+                'description' => 'add new assignment in machine learning 1',
                 'status' => 'pending',
             ],
             [
                 'user_id' => $userId,
-                'title' => 'Upload new lecture video',
-                'description' => 'Add the latest recorded lecture to the portal.',
+                'title' => 'Add new member to my class',
+                'description' => 'Add student in my class.',
                 'status' => 'pending',
-            ],
-            [
-                'user_id' => $userId,
-                'title' => 'Finalize grading sheet',
-                'description' => 'Submit the grades for final review.',
-                'status' => 'completed',
             ],
         ];
 

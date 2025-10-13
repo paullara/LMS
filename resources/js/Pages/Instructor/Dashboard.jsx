@@ -33,7 +33,7 @@ export default function Dashboard() {
             try {
                 const res = await axios.get("/students/json");
                 setStudents(res.data.students);
-                setGrowth(res.data.growth);
+                setGrowth(res.data.new_this_month);
             } catch (err) {
                 console.error("Error fetching students", err);
             }
@@ -98,7 +98,7 @@ export default function Dashboard() {
                 <div className="h-full w-left flex flex-col justify-between">
                     {/* Greetings card */}
                     <div className="h-greetings w-full flex flex-col p-6 gap-5">
-                        <h1 className="text-7xl font-medium tracking-wide flex items-center gap-3">
+                        <h1 className="text-6xl font-medium tracking-wide flex items-center gap-3">
                             {greeting}{" "}
                             <span className="text-bluepsu">
                                 {instructor?.firstname || ""}
@@ -145,7 +145,7 @@ export default function Dashboard() {
                                 }`}
                             >
                                 {growth >= 0 ? "+" : ""}
-                                {growth}% from last month
+                                {growth} from last month
                             </p>
                         </div>
 
@@ -296,9 +296,114 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="h-full w-right bg-blue-500 flex flex-col justify-between gap-2">
-                    <div className="h-1/2 w-full bg-yellow-500"></div>
-                    <div className="h-1/2 w-full bg-green-500"></div>
+                <div className="h-full w-right flex flex-col justify-between gap-2">
+                    <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg flex flex-col items-center p-6 transition-all duration-300">
+                        {/* Profile Image */}
+                        <div className="relative">
+                            <img
+                                src={`/${instructor?.profile_picture}`}
+                                alt="Instructor"
+                                className="w-24 h-24 rounded-full border-4 border-bluepsu object-cover shadow-md"
+                            />
+                            <span className="absolute bottom-0 right-0 bg-bluepsu text-white text-xs px-2 py-0.5 rounded-full shadow">
+                                🎓 Instructor
+                            </span>
+                        </div>
+
+                        {/* Name & Bio */}
+                        <h1 className="mt-4 text-xl font-semibold text-gray-800">
+                            {instructor?.firstname} {instructor?.lastname}
+                        </h1>
+                        <p className="text-sm text-gray-500 text-center mt-1 px-4">
+                            {instructor?.bio ||
+                                "Passionate about teaching and learning."}
+                        </p>
+
+                        {/* University */}
+                        <p className="text-bluepsu font-medium text-sm mt-3">
+                            Pangasinan State University
+                        </p>
+
+                        {/* Divider line */}
+                        <div className="w-3/4 border-t border-gray-200 my-4"></div>
+
+                        {/* Info Section */}
+                        <div className="w-full px-6">
+                            <div className="flex flex-col gap-3">
+                                <div>
+                                    <h2 className="text-gray-500 text-xs uppercase tracking-wider">
+                                        Specialization
+                                    </h2>
+                                    <p className="text-gray-800 font-medium">
+                                        {instructor?.specialization ||
+                                            "Not specified"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <h2 className="text-gray-500 text-xs uppercase tracking-wider">
+                                        Email
+                                    </h2>
+                                    <p className="text-gray-800 font-medium break-words">
+                                        {instructor?.email}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="w-full bg-white shadow-sm rounded-2xl p-6 border border-gray-100 h-1/2 flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                            <h1 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+                                📝 My Tasks
+                            </h1>
+                            {tasks.length > 0 && (
+                                <button className="text-sm text-blue-500 hover:text-blue-600 transition font-medium">
+                                    View All
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Content */}
+                        {tasks.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center flex-1 text-gray-500">
+                                <img
+                                    src="/images/empty.gif"
+                                    alt="No tasks"
+                                    className="w-28 mb-3 opacity-70"
+                                />
+                                <p className="text-sm font-medium">
+                                    No tasks yet.
+                                </p>
+                            </div>
+                        ) : (
+                            <ul className="divide-y divide-gray-100">
+                                {tasks.slice(0, 5).map((task) => (
+                                    <li
+                                        key={task.id}
+                                        className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-blue-50 transition"
+                                    >
+                                        <div className="flex flex-col">
+                                            <h2 className="text-base font-semibold text-gray-800">
+                                                {task.title}
+                                            </h2>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {task.description}
+                                            </p>
+                                        </div>
+                                        <span className="text-xs font-medium text-gray-400">
+                                            {task.due_date
+                                                ? new Date(
+                                                      task.due_date
+                                                  ).toLocaleDateString()
+                                                : ""}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 </div>
             </div>
         </InstructorLayout>

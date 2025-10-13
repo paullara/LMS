@@ -10,6 +10,7 @@ use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\ClassMaterialController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ThreadController;
 use App\Http\Controllers\Auth\RegisterInstructorController;
 use App\Http\Controllers\SubmissionController;
@@ -85,7 +86,7 @@ Route::middleware(['auth', 'instructor'])->group(function () {
     Route::post('/instructor/{id}/add-member', [InstructorController::class, 'addStudentToClassroom']);
     Route::delete('/classroom/{classId}/remove-student/{studentId}', [InstructorController::class, 'removeStudent']);
     Route::delete('/quiz/{quizId}', [InstructorController::class, 'removeQuiz']);
-    
+    Route::get('/instructor/student-progress', [InstructorController::class, 'studentProgress'])->name('instructor.student.progress');
 });
 Route::get('/classroom/{id}/members', [InstructorController::class, 'getMembers']);
 Route::get('/student/{id}/grade', [AverageController::class, 'grade']);
@@ -103,6 +104,7 @@ Route::get('/instructors/json', [DashboardController::class, 'getInstructor']);
 Route::get('/students/json', [DashboardController::class, 'getStudents']);
 Route::get('/classes/json', [DashboardController::class, 'getClasses']);
 Route::get('/tasks/json', [DashboardController::class, 'getTasks']);
+Route::get('/instructor/classes-progress', [ProgressController::class, 'studentProgress']);
 
 Route::middleware('auth')->group(function () {
     Route::post('/instructor/classroom/{id}/add-student', [InstructorController::class, 'addStudent'])->name('instructor.classroom.addStudent');

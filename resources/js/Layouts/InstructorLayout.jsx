@@ -58,7 +58,7 @@ export default function InstructorLayout({ header, children }) {
                     </Link>
 
                     <Link
-                        // href={route("instructor.profile")}
+                        href={route("instructor.student.progress")}
                         className="flex items-center gap-2"
                     >
                         <h1 className="text-profile text-lg font-medium">
@@ -89,7 +89,7 @@ export default function InstructorLayout({ header, children }) {
             {/* Main content */}
             <div className="flex-1 flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between bg-white border-b">
+                <div className="flex items-center justify-between bg-white ">
                     <div className="flex items-center p-6">
                         {route().current("instructor.dashboard") && (
                             <h1 className="text-xl font-medium tracking-wide">
@@ -105,6 +105,11 @@ export default function InstructorLayout({ header, children }) {
                         )}
                         {route().current("test.classroom") && (
                             <h1 className="text-xl font-medium">Classroom</h1>
+                        )}
+                        {route().current("instructor.student.progress") && (
+                            <h1 className="text-xl font-medium">
+                                Student Progress Overview
+                            </h1>
                         )}
                     </div>
                     <header className="bg-white h-16 px-4 flex items-center justify-between">
@@ -129,7 +134,7 @@ export default function InstructorLayout({ header, children }) {
                                         <img
                                             src={`/${user.profile_picture}`}
                                             alt="Profile"
-                                            className="w-8 h-8 rounded-full object-cover"
+                                            className="w-10 h-10 rounded-full object-cover"
                                         />
                                         {/* <span>{user.firstname}</span> */}
                                     </button>
