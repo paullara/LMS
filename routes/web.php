@@ -104,8 +104,9 @@ Route::get('/submissions/quiz', [QuizController::class, 'submissions']);
 Route::get('/instructors/json', [DashboardController::class, 'getInstructor']);
 Route::get('/students/json', [DashboardController::class, 'getStudents']);
 Route::get('/classes/json', [DashboardController::class, 'getClasses']);
-Route::get('/tasks/json', [DashboardController::class, 'getTasks']);
+Route::get('/task/json', [DashboardController::class, 'getTasks']);
 Route::get('/instructor/classes-progress', [ProgressController::class, 'studentProgress']);
+Route::get('/tasks/{task}/refresh-progress', [TaskController::class, 'refreshProgress']);
 
 Route::middleware('auth')->group(function () {
     Route::post('/instructor/classroom/{id}/add-student', [InstructorController::class, 'addStudent'])->name('instructor.classroom.addStudent');

@@ -29,6 +29,16 @@ class ProgressController extends Controller
 
             $averageAssignmentGrade = $assignmentSubmissions->avg('grade') ?? 0;
 
+            $quizAvg = $quizSubmissions->count() > 0
+                ? $quizSubmissions->avg(fn($q) => $q->score ?? 0)
+                : 0;
+
+            $assAvg = $assignmentSubmissions->count() > 0
+                ? $assignmentSubmissions->avg(fn($a) => $a->grade ?? 0)
+                : 0;
+
+            $overallAvg = round(($quizAvg + $assAvg) / 2, 2);
+
             // Submission rate
             $totalTasks = $quizSubmissions->count() + $assignmentSubmissions->count();
             $completedTasks = $quizSubmissions->where('status', 'submitted')->count()
@@ -42,6 +52,7 @@ class ProgressController extends Controller
                 'average_quiz' => round($averageQuizScore, 2),
                 'average_assignment' => round($averageAssignmentGrade, 2),
                 'submission_rate' => $submissionRate,
+                'overall_avg' => $overallAvg
             ];
         });
 

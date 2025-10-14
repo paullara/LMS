@@ -26,4 +26,9 @@ class Assignment extends Model
     {
         return $this->hasMany(Submission::class, 'assignment_id');
     }
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
+    }
 }

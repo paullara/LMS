@@ -477,29 +477,53 @@ class InstructorController extends Controller
             ->first()
             ?->students ?? collect();
 
-        $progressData = $students->map(function ($student) use ($classId) {
-            $totalAssignments = Assignment::where('class_id', $classId)->count();
+        // Fetch all assignments and quizzes once to reduce queries
+        $assignments = Assignment::where('class_id', $classId)->get();
+        $quizzes = Quiz::where('class_id', $classId)->get();
+
+        $progressData = $students->map(function ($student) use ($assignments, $quizzes, $classId) {
+            // Assignments
             $completedAssignments = Submission::where('student_id', $student->id)
-                ->whereHas('assignment', fn($q) => $q->where('class_id', $classId))
-                ->count();
+                ->whereIn('assignment_id', $assignments->pluck('id'))
+                ->get();
 
-            $totalQuizzes = Quiz::where('class_id', $classId)->count();
+            $assignmentAvg = $completedAssignments->count() > 0
+                ? round($completedAssignments->avg('grade') ?? 0, 2)
+                : 0;
+
+            // Quizzes
             $completedQuizzes = QuizSubmission::where('student_id', $student->id)
-                ->whereHas('quiz', fn($q) => $q->where('class_id', $classId))
-                ->count();
+                ->whereIn('quiz_id', $quizzes->pluck('id'))
+                ->get();
 
-            $totalTasks = $totalAssignments + $totalQuizzes;
-            $completedTasks = $completedAssignments + $completedQuizzes;
+            $quizAvg = $completedQuizzes->count() > 0
+                ? round($completedQuizzes->avg('score') ?? 0, 2)
+                : 0;
 
+            // Overall average (average only existing scores)
+            if ($assignments->count() > 0 && $quizzes->count() > 0) {
+                $overallAvg = round(($assignmentAvg + $quizAvg) / 2, 2);
+            } elseif ($assignments->count() > 0) {
+                $overallAvg = $assignmentAvg;
+            } elseif ($quizzes->count() > 0) {
+                $overallAvg = $quizAvg;
+            } else {
+                $overallAvg = 0;
+            }
+
+            // Progress
+            $totalTasks = $assignments->count() + $quizzes->count();
+            $completedTasks = $completedAssignments->count() + $completedQuizzes->count();
             $progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 2) : 0;
 
             return [
                 'id' => $student->id,
                 'name' => "{$student->firstname} {$student->lastname}",
-                'assignments_completed' => $completedAssignments,
-                'assignments_total' => $totalAssignments,
-                'quizzes_completed' => $completedQuizzes,
-                'quizzes_total' => $totalQuizzes,
+                'assignments_completed' => $completedAssignments->count(),
+                'assignments_total' => $assignments->count(),
+                'quizzes_completed' => $completedQuizzes->count(),
+                'quizzes_total' => $quizzes->count(),
+                'overall_avg' => $overallAvg,
                 'progress' => $progress,
             ];
         });
@@ -510,5 +534,6 @@ class InstructorController extends Controller
             'selectedClass' => $classId,
         ]);
     }
+
 
 }

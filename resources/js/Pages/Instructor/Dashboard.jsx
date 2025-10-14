@@ -83,7 +83,7 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchTasks = async () => {
             try {
-                const res = await axios.get("/tasks/json");
+                const res = await axios.get("/task/json");
                 setTasks(res.data.tasks);
                 setTaskDisplay(res.data.taskCount);
                 setDueToday(res.data.dueToday);
@@ -360,7 +360,7 @@ export default function Dashboard() {
                             <h1 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
                                 📝 My Tasks
                             </h1>
-                            {tasks.length > 0 && (
+                            {tasks?.length > 0 && (
                                 <button className="text-sm text-blue-500 hover:text-blue-600 transition font-medium">
                                     View All
                                 </button>

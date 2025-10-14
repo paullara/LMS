@@ -1,183 +1,119 @@
 import InstructorLayout from "@/Layouts/InstructorLayout";
-import { useState } from "react";
-import { Inertia } from "@inertiajs/inertia";
-import { usePage } from "@inertiajs/react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-export default function TasksIndex() {
-    const { props } = usePage();
-    const { tasks = [] } = props;
+export default function Tasks() {
+    const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const [showForm, setShowForm] = useState(false);
-    const [formData, setFormData] = useState({
-        title: "",
-        description: "",
-        due_date: "",
-        priority: "medium",
-    });
+    useEffect(() => {
+        const fetchTasks = async () => {
+            try {
+                const res = await axios.get("/tasks/json");
+                setTasks(res.data || []);
+            } catch (error) {
+                console.error("Error fetching tasks:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const today = new Date().toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
+        fetchTasks();
+    }, []);
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-    };
+    // Get card color based on status or priority
+    const getTaskColor = (task) => {
+        if (task.status === "cancelled") return "bg-gray-100 border-gray-300";
+        if (task.status === "completed") return "bg-blue-100 border-blue-300";
 
-    const handleAddTask = () => {
-        if (!formData.title.trim()) return;
-
-        Inertia.post("/tasks", formData, {
-            onSuccess: () => {
-                setFormData({
-                    title: "",
-                    description: "",
-                    due_date: "",
-                    priority: "medium",
-                });
-                setShowForm(false);
-            },
-        });
-    };
-
-    const getTaskColor = (priority) => {
-        switch (priority) {
+        switch (task.priority) {
             case "urgent":
-                return "bg-red-700 text-white";
+                return "bg-red-100 border-red-300";
             case "high":
-                return "bg-orange-500 text-white";
+                return "bg-orange-100 border-orange-300";
             case "medium":
-                return "bg-yellow-400 text-black";
+                return "bg-yellow-100 border-yellow-300";
             case "low":
-                return "bg-green-400 text-black";
-            case "completed":
-                return "bg-blue-400 text-white";
-            case "cancelled":
-                return "bg-gray-700 text-white";
+                return "bg-green-100 border-green-300";
             default:
-                return "bg-gray-200 text-black";
+                return "bg-white border-gray-200";
         }
     };
 
-    const renderColumn = (status) =>
-        tasks
-            .filter((task) => task.status === status)
-            .map((task) => (
-                <div
-                    key={task.id}
-                    className={`p-4 rounded-2xl shadow-md ${getTaskColor(
-                        task.priority
-                    )} hover:scale-105 transform transition w-48 h-48 flex flex-col justify-between`}
-                >
-                    <div>
-                        <h3 className="font-semibold text-lg">{task.title}</h3>
-                        {task.description && (
-                            <p className="mt-2 text-sm">{task.description}</p>
-                        )}
-                    </div>
-                    {task.due_date && (
-                        <p className="mt-4 text-xs opacity-80">
-                            Due: {new Date(task.due_date).toLocaleDateString()}
-                        </p>
-                    )}
+    const renderTaskCard = (task) => (
+        <div
+            key={task.id}
+            className={`rounded-xl shadow-md p-4 border ${getTaskColor(
+                task
+            )} hover:shadow-lg transition-all duration-300`}
+        >
+            <h2 className="text-lg font-semibold text-gray-800 mb-1">
+                {task.title}
+            </h2>
+            <p className="text-sm text-gray-500 mb-3">{task.description}</p>
+
+            {/* Progress bar only for in-progress */}
+            {task.status === "in-progress" && (
+                <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                    <div
+                        className="bg-blue-500 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${task.progress || 0}%` }}
+                    ></div>
                 </div>
-            ));
+            )}
+
+            {task.due_date && (
+                <p className="text-xs text-gray-400 mt-2">
+                    Due: {new Date(task.due_date).toLocaleDateString()}
+                </p>
+            )}
+        </div>
+    );
+
+    const statusOrder = ["pending", "in-progress", "cancelled", "completed"];
+    const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
     return (
         <InstructorLayout>
-            <div className="w-full h-screen flex flex-col font-[Poppins] bg-gray-50">
-                {/* Top Bar */}
-                <div className="h-20 w-full flex items-center justify-between px-6 bg-white border-b border-gray-200">
-                    <h1 className="text-xl font-semibold text-gray-800">
-                        {today}
-                    </h1>
-                    <button
-                        onClick={() => setShowForm(!showForm)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
-                    >
-                        {showForm ? "Close" : "Add Task"}
-                    </button>
-                </div>
+            <div className="p-6">
+                <h1 className="text-2xl font-semibold text-gray-800 mb-6">
+                    Tasks Overview
+                </h1>
 
-                {/* Add Task Form */}
-                {showForm && (
-                    <div className="p-6 border-b border-gray-200 bg-white flex flex-col gap-3 shadow-md rounded-b-xl mx-6 -mt-2">
-                        <input
-                            type="text"
-                            name="title"
-                            value={formData.title}
-                            onChange={handleChange}
-                            placeholder="Task title"
-                            className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-                        <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            placeholder="Task description"
-                            className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-                        <input
-                            type="date"
-                            name="due_date"
-                            value={formData.due_date}
-                            onChange={handleChange}
-                            className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-                        <select
-                            name="priority"
-                            value={formData.priority}
-                            onChange={handleChange}
-                            className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        >
-                            <option value="urgent">Urgent</option>
-                            <option value="high">High</option>
-                            <option value="medium">Medium</option>
-                            <option value="low">Low</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                        <button
-                            onClick={handleAddTask}
-                            className="px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition"
-                        >
-                            Save Task
-                        </button>
+                {loading ? (
+                    <p>Loading tasks...</p>
+                ) : tasks.length === 0 ? (
+                    <p>No tasks found.</p>
+                ) : (
+                    <div className="flex space-x-6 overflow-x-auto pb-4">
+                        {statusOrder.map((status) => {
+                            const tasksByStatus = tasks.filter(
+                                (t) => t.status === status
+                            );
+                            return (
+                                <div
+                                    key={status}
+                                    className="min-w-[280px] flex-1 flex flex-col bg-gray-50 rounded-2xl p-4 shadow-sm"
+                                >
+                                    <h2 className="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">
+                                        {capitalize(status.replace("-", " "))}
+                                    </h2>
+                                    <div className="space-y-4">
+                                        {tasksByStatus.length === 0 ? (
+                                            <p className="text-gray-400 text-sm">
+                                                No tasks
+                                            </p>
+                                        ) : (
+                                            tasksByStatus.map((task) =>
+                                                renderTaskCard(task)
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
-
-                {/* Task Columns */}
-                <div className="flex-1 w-full flex gap-6 p-6 overflow-y-auto">
-                    <div className="flex-1 bg-gray-100 p-4 rounded-xl shadow-inner">
-                        <h2 className="font-semibold text-lg mb-4">Pending</h2>
-                        <div className="flex flex-wrap gap-4">
-                            {renderColumn("pending")}
-                        </div>
-                    </div>
-
-                    <div className="flex-1 bg-gray-100 p-4 rounded-xl shadow-inner">
-                        <h2 className="font-semibold text-lg mb-4">
-                            In Progress
-                        </h2>
-                        <div className="flex flex-wrap gap-4">
-                            {renderColumn("in-progress")}
-                        </div>
-                    </div>
-
-                    <div className="flex-1 bg-gray-100 p-4 rounded-xl shadow-inner">
-                        <h2 className="font-semibold text-lg mb-4">
-                            Completed
-                        </h2>
-                        <div className="flex flex-wrap gap-4">
-                            {renderColumn("completed")}
-                        </div>
-                    </div>
-                </div>
             </div>
         </InstructorLayout>
     );

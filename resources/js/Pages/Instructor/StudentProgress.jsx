@@ -51,6 +51,9 @@ export default function StudentProgress() {
                                             Assignments
                                         </th>
                                         <th className="py-3 px-4">Quizzes</th>
+                                        <th className="py-3 px-4">
+                                            Overall Avg
+                                        </th>
                                         <th className="py-3 px-4 rounded-tr-xl">
                                             Progress
                                         </th>
@@ -86,6 +89,12 @@ export default function StudentProgress() {
                                                 </span>{" "}
                                                 / {s.quizzes_total}
                                             </td>
+                                            <td className="py-3 px-4">
+                                                <span className="font-semibold text-purple-600">
+                                                    {s.overall_avg}%
+                                                </span>
+                                            </td>
+
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-full bg-gray-200 rounded-full h-3">
