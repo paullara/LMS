@@ -1,15 +1,38 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, useForm } from "@inertiajs/react";
+import { Head } from "@inertiajs/react";
 import { useState } from "react";
+import axios from "axios";
 
 export default function Dashboard({ classes }) {
     const [selectedClass, setSelectedClass] = useState(null);
+    const [code, setCode] = useState("");
+    const [message, setMessage] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     // Handle opening the virtual classroom
     const handleClassClick = (classId) => {
         setSelectedClass(classId);
-        // You can use Inertia to navigate to the virtual classroom page
-        window.location.href = `/classroom/${classId}`; // Change this route as per your app's structure
+        window.location.href = `/classroom/${classId}`;
+    };
+
+    // Handle Join Class by Code
+    const handleJoin = async () => {
+        if (!code.trim()) {
+            setMessage("Please enter a class code.");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const response = await axios.post("/classes/join", { code });
+            setMessage(response.data.message || "Successfully joined class!");
+            setCode(""); // Clear input after success
+            window.location.reload(); // Optional: reload to update class list
+        } catch (error) {
+            setMessage(error.response?.data?.message || "Error joining class.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -22,13 +45,53 @@ export default function Dashboard({ classes }) {
         >
             <Head title="Dashboard" />
 
-            <div className="min-h-screen bg-white ">
+            <div className="min-h-screen bg-white">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white">
                         <div className="p-6 text-gray-900">
-                            <h3 className="text-2xl font-bold text-indigo-800 mb-8">
-                                Your Classes
-                            </h3>
+                            {/* Header row */}
+                            <div className="w-full flex flex-row justify-between items-center mb-6">
+                                <h3 className="text-2xl font-bold text-indigo-800">
+                                    Your Classes
+                                </h3>
+
+                                {/* Join Class Input */}
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={code}
+                                        onChange={(e) =>
+                                            setCode(e.target.value)
+                                        }
+                                        placeholder="Enter class code"
+                                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none w-52"
+                                    />
+                                    <button
+                                        onClick={handleJoin}
+                                        disabled={isLoading}
+                                        className={`${
+                                            isLoading
+                                                ? "bg-gray-400 cursor-not-allowed"
+                                                : "bg-blue-600 hover:bg-blue-700"
+                                        } text-white text-sm px-4 py-2 rounded-lg transition`}
+                                    >
+                                        {isLoading ? "Joining..." : "Join"}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Message Feedback */}
+                            {message && (
+                                <p
+                                    className={`mb-4 text-sm ${
+                                        message.includes("Success")
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                    }`}
+                                >
+                                    {message}
+                                </p>
+                            )}
 
                             {/* Class Cards */}
                             {classes.length > 0 ? (

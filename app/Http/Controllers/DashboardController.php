@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\ClassModel;
 use App\Models\Task;
+use App\Models\Assignment;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -20,6 +21,14 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function getAuthStudent()
+    {
+        $student = auth()->user();
+
+        return response()->json([
+            'student' => $student,
+        ]);
+    }
 
     public function getStudents()
     {
@@ -64,6 +73,42 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function getMyClass()
+    {
+        $student = Auth::user();
+
+        if ($student->role !== 'student') {
+            abort(403, 'Unauthorized');
+        }
+
+        $classes = $student->enrolledClasses()->with('instructor')->latest()->get();
+
+        $classIds = $classes->pluck('id');
+
+        $assignments = Assignment::whereIn('class_id', $classIds)
+            ->where('due_date', '>=', now())
+            ->latest()
+            ->get();
+
+        $currentWeekCount = $classes->filter(fn($c) => $c->created_at->isCurrentWeek())->count();
+        $lastWeekCount = $classes->filter(fn($c) => $c->created_at->isLastWeek())->count();
+        
+        $difference = $currentWeekCount - $lastWeekCount;
+
+        $currentAssCount = $assignments->filter(fn($c) => $c->created_at->isCurrentWeek())->count();
+        $lastAssCount = $assignments->filter(fn($c) => $c->created_at->isLastWeek())->count();
+
+        $assDifference = $currentAssCount - $lastAssCount;
+
+        return response()->json([
+            'classes' => $classes,
+            'assignments' => $assignments,
+            'current_week' => $currentWeekCount,
+            'last_week' => $lastWeekCount,
+            'new_this_week' => $difference > 0 ? $difference : 0,
+            'new_ass_this_week' => $assDifference > 0 ? $assDifference : 0,
+        ]);
+    }
 
     public function getClasses()
     {
@@ -88,7 +133,8 @@ class DashboardController extends Controller
     {
         $instructor = Auth::user();
 
-        $tasks = Task::where('user_id', $instructor->id)->where('status', 'pending')->latest()->get();
+        // $tasks = Task::where('user_id', $instructor->id)->where('status', 'pending')->latest()->get();
+        $tasks = Task::where('user_id', auth()->id())->where('status', 'pending')->latest()->get();
 
         $dueToday = Task::whereDate('created_at', today())
             ->where('user_id', $instructor->id)

@@ -187,4 +187,49 @@ class StudentController extends Controller
             ], 500);
         }
     }
+
+    public function join(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string',
+        ]);
+
+        $class = ClassModel::where('code', $request->code)->first();
+
+        if (!$class) {
+            return response()->json([
+                'message' => 'Invalid code',
+            ], 404);
+        }
+
+        $user = auth()->user();
+
+        $user->enrolledClasses()->syncWithoutDetaching([$class->id]);
+
+        return response()->json([
+            'message' => 'Successfully joined the class!',
+            'class' => $class,
+        ]);
+    }
+
+    public function announcement()
+    {
+        return Inertia::render('Announcement');
+    }
+
+      public function search(Request $request)
+    {
+        $query = $request->query('q');
+
+        $instructors = User::where('role', 'instructor')
+            ->where(function ($q) use ($query) {
+                $q->where('firstname', 'like', "%{$query}%")
+                  ->orWhere('email', 'like', "%{$query}%");
+            })
+            ->select('id', 'firstname', 'email')
+            ->limit(10)
+            ->get();
+
+        return response()->json($instructors);
+    }
 }

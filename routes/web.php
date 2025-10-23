@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\AssController;
 use App\Http\Controllers\AverageController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\InstructorController;
@@ -45,10 +46,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::post('/quizzes/{quiz}/submit', [QuizController::class, 'submit'])->name('quiz.submit');
-    Route::get('/instructor/profile', [InstructorController::class, 'editProfile'])
-        ->name('instructor.profile');
-    Route::put('/instructor/profile', [InstructorController::class, 'update'])
-        ->name('instructor.profile.update');
+    Route::get('/instructor/profile', [InstructorController::class, 'editProfile'])->name('instructor.profile');
+    Route::put('/instructor/profile', [InstructorController::class, 'update'])->name('instructor.profile.update');
+    Route::get('/student/json', [DashboardController::class, 'getAuthStudent']);
+    Route::get('/student/dashboard/data', [DashboardController::class, 'getMyClass']);
+    Route::post('/classes/join', [StudentController::class, 'join']);
+    Route::get('/instructor/announcements', [AnnouncementController::class, 'index']);
+    Route::post('/instructor/announcements', [AnnouncementController::class, 'store']);
+    Route::get('/announcements/public', [AnnouncementController::class, 'publicAnnouncements']);
+    Route::get('/student/announcement', [StudentController::class, 'announcement'])->name('student.announcement');
+    Route::get('/search-instructors', [StudentController::class, 'search']);
+    Route::get('/instructor/{id}/announcements', [AnnouncementController::class, 'byInstructor'])->name('search.result');
 });
 
 Route::middleware(['auth', 'admin'])->group(function () {
@@ -88,6 +96,8 @@ Route::middleware(['auth', 'instructor'])->group(function () {
     Route::delete('/classroom/{classId}/remove-student/{studentId}', [InstructorController::class, 'removeStudent']);
     Route::delete('/quiz/{quizId}', [InstructorController::class, 'removeQuiz']);
     Route::get('/instructor/student-progress', [InstructorController::class, 'studentProgress'])->name('instructor.student.progress');
+    Route::get('/instructor/announcement', [InstructorController::class, 'announcement'])->name('instructor.announcement');
+   
 });
 Route::get('/classroom/{id}/members', [InstructorController::class, 'getMembers']);
 Route::get('/student/{id}/grade', [AverageController::class, 'grade']);

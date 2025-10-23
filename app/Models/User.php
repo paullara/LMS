@@ -31,6 +31,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'google_id',
         'email_verified_at',
         'last_seen_at',
+        'course',
+        'coverphoto'
     ];
 
     /**
@@ -79,5 +81,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function quizSubmissions()
     {
         return $this->hasMany(QuizSubmission::class, 'student_id');
+    }
+
+    public function announcements()
+    {
+        return $this->hasMany(Announcement::class, 'instructor_id');
     }
 }

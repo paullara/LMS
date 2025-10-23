@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Auth;
 use App\Notifications\NewAssignmentNotification;
@@ -93,7 +94,7 @@ class InstructorController extends Controller
             'end_time' => 'required|date_format:H:i|after:start_time',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:10096',
             'yearlevel' => 'required|int',
-            'section' => 'required|string|max:25'
+            'section' => 'required|string|max:25',
         ]);
 
         if ($request->hasFile('photo')) {
@@ -104,6 +105,7 @@ class InstructorController extends Controller
         }
 
         $data['instructor_id'] = auth()->id();
+        $data['code'] = Str::upper(Str::random(6));
 
         ClassModel::create($data);
 
@@ -365,6 +367,7 @@ class InstructorController extends Controller
             'specialization' => 'nullable|string|max:255',
             'bio' => 'nullable|string',
             'profile_picture' => 'nullable|mimes:jpg,jpeg,png|max:4095',
+            'coverphoto' => 'nullable|mimes:jpg,jpeg,png|max:10095',
         ]);
 
         if ($request->hasFile('profile_picture')) {
@@ -373,6 +376,14 @@ class InstructorController extends Controller
             $file->move(public_path('profiles'), $filename);
 
             $user->profile_picture = 'profiles/' . $filename;
+        }
+
+        if ($request->hasFile('coverphoto')) {
+            $file = $request->file('coverphoto');
+            $filename = time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('profiles'), $filename);
+
+            $user->coverphoto = 'profiles/' . $filename;
         }
 
         $user->update($request->only([
@@ -535,5 +546,8 @@ class InstructorController extends Controller
         ]);
     }
 
-
+    public function announcement()
+    {
+        return Inertia::render('Instructor/Announcement');
+    }
 }

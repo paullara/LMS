@@ -22,6 +22,7 @@ class ClassModel extends Model
         'section',
         'start_time',
         'end_time',
+        'code'
     ];
 
     public function instructor()

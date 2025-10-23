@@ -56,6 +56,14 @@ export default function InstructorLayout({ header, children }) {
                             Task
                         </h1>
                     </Link>
+                    <Link
+                        href={route("instructor.announcement")}
+                        className="flex items-center gap-2 mb-6"
+                    >
+                        <h1 className="text-profile text-lg font-medium">
+                            Announcement
+                        </h1>
+                    </Link>
 
                     <Link
                         href={route("instructor.student.progress")}
@@ -68,7 +76,7 @@ export default function InstructorLayout({ header, children }) {
                 </div>
 
                 {/* Sticky Profile + Logout (sticks to sidebar bottom) */}
-                <div className="sticky bottom-0 bg-white border-t p-4">
+                <div className="sticky bottom-0 bg-gray-50 border-t p-4">
                     <NavLink
                         href={route("instructor.profile")}
                         className="w-full px-3 py-2 rounded-md text-sm font-medium text-lg"

@@ -12,12 +12,13 @@ export default function Profile({ user }) {
         specialization: user.specialization || "",
         bio: user.bio || "",
         profile_picture: null,
+        coverphoto: null,
     });
 
     const handleChange = (e) => {
         const { name, value, files } = e.target;
-        if (name === "profile_picture") {
-            setForm({ ...form, profile_picture: files[0] });
+        if (files) {
+            setForm({ ...form, [name]: files[0] });
         } else {
             setForm({ ...form, [name]: value });
         }
@@ -96,6 +97,18 @@ export default function Profile({ user }) {
                         <input
                             type="file"
                             name="profile_picture"
+                            accept="image/*"
+                            onChange={handleChange}
+                            className="w-full"
+                        />
+                    </div>
+                    <div>
+                        <label className="block font-medium mb-1">
+                            Cover Photo
+                        </label>
+                        <input
+                            type="file"
+                            name="coverphoto"
                             accept="image/*"
                             onChange={handleChange}
                             className="w-full"

@@ -326,20 +326,19 @@ export default function Welcome({ auth }) {
                         )}
                     </div>
                 </nav>
-
                 <section
                     id="home"
                     className="relative section min-h-screen h-screen flex flex-col items-center justify-center
-               bg-white text-center px-10 pt-20 overflow-hidden opacity-0 hero-wrapper"
+    bg-white text-center px-10 overflow-hidden opacity-0 hero-wrapper"
                 >
-                    {/* Blue Gradient Accent Background */}
-                    <div className="absolute top-0 -left-20 w-[500px] h-[500px] bg-gradient-to-br from-blue-300 via-blue-400 to-blue-500 rounded-full blur-3xl opacity-30 z-0 animate-pulse-slow" />
-                    <div className="absolute bottom-0 -right-20 w-[400px] h-[400px] bg-gradient-to-tr from-blue-100 to-blue-300 rounded-full blur-3xl opacity-40 z-0" />
+                    {/* Blue Gradient Accent Backgrounds */}
+                    <div className="absolute top-0 -left-[10%] w-[40vw] h-[40vw] bg-gradient-to-br from-blue-300 via-blue-400 to-blue-500 rounded-full blur-3xl opacity-30 z-0 animate-pulse-slow" />
+                    <div className="absolute bottom-0 -right-[10%] w-[35vw] h-[35vw] bg-gradient-to-tr from-blue-100 to-blue-300 rounded-full blur-3xl opacity-40 z-0" />
 
                     {/* Main Content */}
                     <motion.h1
                         id="hero-title"
-                        className="relative z-10 text-7xl font-semibold text-gray-800 mt-4 flex flex-wrap justify-center"
+                        className="relative z-10 text-7xl font-semibold text-gray-800 mt-40 flex flex-wrap justify-center"
                         variants={container}
                         initial="hidden"
                         animate="visible"
@@ -360,23 +359,23 @@ export default function Welcome({ auth }) {
                         place.
                     </p>
 
-                    <div className="relative z-10 w-full flex items-center justify-center mt-10">
+                    {/* Hero Image */}
+                    <div className="relative z-20 w-full max-w-6xl mx-auto flex items-center justify-center mt-6 px-4 rounded-2xl shadow-lg bg-white hero-image">
                         <img
-                            src="/images/hero.png"
+                            src="/images/image.png"
                             alt="Learning System"
-                            className="w-[50%] max-w-[1100px] h-[auto] object-contain hero-image opacity-0"
+                            className="w-full h-auto object-contain max-h-none rounded-2xl"
                         />
                     </div>
                 </section>
 
                 <section
                     id="features"
-                    className="relative section feature-card min-h-screen flex flex-col items-center justify-center bg-white text-center px-6 pt-20 overflow-hidden -mt-20"
+                    className="relative section feature-card min-h-screen flex flex-col items-center justify-center bg-white text-center px-6 pt-20 overflow-hidden"
                 >
                     {/* Unique Gradient Accents */}
                     <div className="absolute top-10 right-[-150px] w-[350px] h-[350px] bg-gradient-to-tr from-blue-300 via-blue-400 to-blue-500 rounded-full blur-3xl opacity-30 z-0" />
                     <div className="absolute bottom-[-100px] left-[-100px] w-[250px] h-[250px] bg-gradient-to-br from-blue-100 to-blue-300 rounded-full blur-2xl opacity-40 z-0" />
-
                     {/* Title */}
                     <p className="feature-title relative z-10 text-xl text-blue-500 tracking-widest uppercase mb-2 feature-description">
                         Features
@@ -396,7 +395,6 @@ export default function Welcome({ auth }) {
                                 </span>
                             ))}
                     </h1>
-
                     {/* Features Grid */}
                     <div className="relative z-10 mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl">
                         {/* Feature Card 1 */}
@@ -448,7 +446,6 @@ export default function Welcome({ auth }) {
                         </div>
                     </div>
                 </section>
-
                 <section
                     id="guide"
                     className="section min-h-screen flex flex-col items-center justify-center bg-white text-center px-10 pt-20"
@@ -554,7 +551,6 @@ export default function Welcome({ auth }) {
                         </div>
                     </div>
                 </section>
-
                 <section
                     id="about"
                     className="section min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white px-6 py-16"
@@ -631,7 +627,6 @@ export default function Welcome({ auth }) {
                         ))}
                     </div>
                 </section>
-
                 <section className="w-full h-[350px] flex items-center justify-evenly bg-white shadow-md gap-11">
                     <div className="w-2/5 h-full flex flex-col justify-center px-10 gap-4">
                         <div className="flex flex-row items-center w-full">
