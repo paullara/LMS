@@ -20,6 +20,7 @@ export default function VideoCall({ videoCall }) {
     const peerInstance = useRef(null);
     const streamRef = useRef(null);
     const calledPeers = useRef(new Set());
+    const activeCallsRef = useRef(new Map());
 
     const [peerId, setPeerId] = useState(null);
     const [sharing, setSharing] = useState(false);
@@ -40,12 +41,25 @@ export default function VideoCall({ videoCall }) {
 
         myPeer.on("open", (id) => setPeerId(id));
         myPeer.on("call", (call) => {
+            // answer without sending a local stream
             call.answer();
 
             call.on("stream", (remoteStream) => {
                 if (myVideoRef.current) {
                     myVideoRef.current.srcObject = remoteStream;
                 }
+            });
+
+            // when remote peer closes the call (e.g. host stopped sharing),
+            // clear the video element so participants stop seeing the ended stream
+            call.on("close", () => {
+                if (myVideoRef.current) {
+                    myVideoRef.current.srcObject = null;
+                }
+            });
+
+            call.on("error", (err) => {
+                console.error("Incoming call error:", err);
             });
         });
 
@@ -149,9 +163,16 @@ export default function VideoCall({ videoCall }) {
                             p.peer_id,
                             stream
                         );
+                        // store active call so we can close it later
+                        activeCallsRef.current.set(p.peer_id, call);
+                        calledPeers.current.add(p.peer_id);
                         call.on("error", (err) =>
                             console.error("Call error with", p.peer_id, err)
                         );
+                        call.on("close", () => {
+                            activeCallsRef.current.delete(p.peer_id);
+                            calledPeers.current.delete(p.peer_id);
+                        });
                     }
                 });
             }
@@ -161,11 +182,23 @@ export default function VideoCall({ videoCall }) {
     };
 
     const stopSharing = () => {
+        // stop local tracks
         if (streamRef.current) {
             streamRef.current.getTracks().forEach((track) => track.stop());
         }
         streamRef.current = null;
         myVideoRef.current.srcObject = null;
+
+        // close all outgoing PeerJS calls related to sharing so participants stop receiving stream
+        activeCallsRef.current.forEach((call) => {
+            try {
+                call.close();
+            } catch (e) {
+                console.warn("Error closing call:", e);
+            }
+        });
+        activeCallsRef.current.clear();
+        calledPeers.current.clear();
         setSharing(false);
     };
 
@@ -212,10 +245,15 @@ export default function VideoCall({ videoCall }) {
                     p.peer_id,
                     streamRef.current
                 );
+                activeCallsRef.current.set(p.peer_id, call);
+                calledPeers.current.add(p.peer_id);
                 call.on("error", (err) =>
                     console.error("Call error with", p.peer_id, err)
                 );
-                calledPeers.current.add(p.peer_id);
+                call.on("close", () => {
+                    activeCallsRef.current.delete(p.peer_id);
+                    calledPeers.current.delete(p.peer_id);
+                });
             }
         });
     }, [participants]);
@@ -295,7 +333,7 @@ export default function VideoCall({ videoCall }) {
                             {participants.map((p) => (
                                 <div
                                     key={p.id}
-                                    className="bg-white relative bg-[#11131b] border border-gray-700 rounded-xl p-3 flex flex-col items-center justify-center shadow-md"
+                                    className="relative bg-[#11131b] border border-gray-700 rounded-xl p-3 flex flex-col items-center justify-center shadow-md"
                                 >
                                     {p.user.id === currentUser.id &&
                                     cameraOn ? (
