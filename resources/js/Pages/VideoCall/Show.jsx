@@ -295,7 +295,7 @@ export default function VideoCall({ videoCall }) {
                             {participants.map((p) => (
                                 <div
                                     key={p.id}
-                                    className="relative bg-[#232635] border border-gray-700 rounded-xl p-3 flex flex-col items-center justify-center shadow-md"
+                                    className="bg-white relative bg-[#11131b] border border-gray-700 rounded-xl p-3 flex flex-col items-center justify-center shadow-md"
                                 >
                                     {p.user.id === currentUser.id &&
                                     cameraOn ? (
