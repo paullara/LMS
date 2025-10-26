@@ -11,6 +11,7 @@ import {
     MonitorX,
     PhoneOff,
     Users,
+    MessageCircle,
 } from "lucide-react";
 
 export default function VideoCall({ videoCall }) {
@@ -26,6 +27,10 @@ export default function VideoCall({ videoCall }) {
     const [micOn, setMicOn] = useState(false);
     const [participants, setParticipants] = useState([]);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [chatOpen, setChatOpen] = useState(false);
+    const [fullscreen, setFullscreen] = useState(false);
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState("");
 
     const currentUser = auth.user;
 
@@ -215,7 +220,50 @@ export default function VideoCall({ videoCall }) {
         });
     }, [participants]);
 
-    // --- UI ---
+    useEffect(() => {
+        const fetchMessages = async () => {
+            try {
+                const res = await axios.get(
+                    `/video-call/${videoCall.id}/messages`
+                );
+                setMessages(res.data.messages);
+            } catch (error) {
+                console.error("Failed to fetch messages:", error);
+            }
+        };
+        fetchMessages();
+        const interval = setInterval(fetchMessages, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // send message
+    const sendMessage = async (e) => {
+        e.preventDefault();
+        if (!newMessage.trim()) return;
+
+        try {
+            const res = await axios.post(
+                `/video-call/${videoCall.id}/messages`,
+                {
+                    message: newMessage,
+                }
+            );
+            setMessages((prev) => [...prev, res.data.message]);
+            setNewMessage("");
+        } catch (error) {
+            console.error("Failed to send message:", error);
+        }
+    };
+
+    // key command
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === "Escape") setFullscreen(false);
+        };
+        window.addEventListener("keydown", handleEsc);
+        return () => window.removeEventListener("keydown", handleEsc);
+    }, []);
+
     return (
         <div className="h-screen flex flex-col bg-[#0f1117] text-white">
             {/* Header */}
@@ -243,28 +291,38 @@ export default function VideoCall({ videoCall }) {
                                 ✕
                             </button>
                         </div>
-                        <ul className="space-y-3">
+                        <div className="grid grid-cols-1 gap-4">
                             {participants.map((p) => (
-                                <li
+                                <div
                                     key={p.id}
-                                    className={`flex items-center space-x-2 text-sm ${
-                                        p.user.id === currentUser.id
-                                            ? "text-blue-400"
-                                            : "text-gray-300"
-                                    }`}
+                                    className="relative bg-[#232635] border border-gray-700 rounded-xl p-3 flex flex-col items-center justify-center shadow-md"
                                 >
-                                    <img
-                                        src={`/${p.user.profile_picture}`}
-                                        className="w-6 h-6 rounded-full border border-gray-600"
-                                    />
-                                    <span>
-                                        {p.user.firstname} {p.user.lastname}
-                                        {p.user.id === currentUser.id &&
-                                            " (You)"}
-                                    </span>
-                                </li>
+                                    {p.user.id === currentUser.id &&
+                                    cameraOn ? (
+                                        <video
+                                            ref={myVideoRef}
+                                            autoPlay
+                                            playsInline
+                                            muted
+                                            className="rounded-lg w-full h-32 object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-32 bg-[#11131b] rounded-lg flex flex-col items-center justify-center text-gray-400">
+                                            <img
+                                                src={`/${p.user.profile_picture}`}
+                                                className="w-12 h-12 rounded-full border border-gray-600 mb-1"
+                                            />
+                                            <span className="text-xs text-gray-300 text-center">
+                                                {p.user.firstname}{" "}
+                                                {p.user.lastname}
+                                                {p.user.id === currentUser.id &&
+                                                    " (You)"}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     </aside>
                 )}
 
@@ -275,66 +333,133 @@ export default function VideoCall({ videoCall }) {
                         autoPlay
                         playsInline
                         muted
-                        className="rounded-xl bg-black w-full max-w-5xl aspect-video object-cover shadow-lg"
+                        className="rounded-xl bg-black w-full max-w-5xl aspect-video object-cover shadow-lg mb-24"
                     />
-                    <div className="absolute bottom-10 flex gap-6 bg-[#1b1f2b]/80 px-6 py-3 rounded-full shadow-xl backdrop-blur-sm border border-gray-700">
-                        <button
-                            onClick={toggleCamera}
-                            className={`p-3 rounded-full ${
-                                cameraOn
-                                    ? "bg-green-600 hover:bg-green-700"
-                                    : "bg-gray-700 hover:bg-gray-600"
-                            }`}
-                        >
-                            {cameraOn ? (
-                                <Video size={20} />
+
+                    {!fullscreen && (
+                        <div className="absolute bottom-10 flex gap-6 bg-[#1b1f2b]/80 px-6 py-3 rounded-full shadow-xl backdrop-blur-sm border border-gray-700 mt-20">
+                            <button
+                                onClick={toggleCamera}
+                                className={`p-3 rounded-full ${
+                                    cameraOn
+                                        ? "bg-green-600 hover:bg-green-700"
+                                        : "bg-gray-700 hover:bg-gray-600"
+                                }`}
+                            >
+                                {cameraOn ? (
+                                    <Video size={20} />
+                                ) : (
+                                    <VideoOff size={20} />
+                                )}
+                            </button>
+
+                            <button
+                                onClick={toggleMic}
+                                className={`p-3 rounded-full ${
+                                    micOn
+                                        ? "bg-green-600 hover:bg-green-700"
+                                        : "bg-gray-700 hover:bg-gray-600"
+                                }`}
+                            >
+                                {micOn ? (
+                                    <Mic size={20} />
+                                ) : (
+                                    <MicOff size={20} />
+                                )}
+                            </button>
+
+                            {!sharing ? (
+                                <button
+                                    onClick={startSharing}
+                                    className="p-3 rounded-full bg-blue-600 hover:bg-blue-700"
+                                >
+                                    <MonitorUp size={20} />
+                                </button>
                             ) : (
-                                <VideoOff size={20} />
+                                <button
+                                    onClick={stopSharing}
+                                    className="p-3 rounded-full bg-yellow-500 hover:bg-yellow-600"
+                                >
+                                    <MonitorX size={20} />
+                                </button>
                             )}
-                        </button>
 
-                        <button
-                            onClick={toggleMic}
-                            className={`p-3 rounded-full ${
-                                micOn
-                                    ? "bg-green-600 hover:bg-green-700"
-                                    : "bg-gray-700 hover:bg-gray-600"
-                            }`}
-                        >
-                            {micOn ? <Mic size={20} /> : <MicOff size={20} />}
-                        </button>
-
-                        {!sharing ? (
                             <button
-                                onClick={startSharing}
-                                className="p-3 rounded-full bg-blue-600 hover:bg-blue-700"
+                                onClick={handleEndCall}
+                                className="p-3 rounded-full bg-red-600 hover:bg-red-700"
                             >
-                                <MonitorUp size={20} />
+                                <PhoneOff size={20} />
                             </button>
-                        ) : (
+
                             <button
-                                onClick={stopSharing}
-                                className="p-3 rounded-full bg-yellow-500 hover:bg-yellow-600"
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="p-3 rounded-full bg-gray-700 hover:bg-gray-600"
                             >
-                                <MonitorX size={20} />
+                                <Users size={20} />
                             </button>
-                        )}
-
-                        <button
-                            onClick={handleEndCall}
-                            className="p-3 rounded-full bg-red-600 hover:bg-red-700"
-                        >
-                            <PhoneOff size={20} />
-                        </button>
-
-                        <button
-                            onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-3 rounded-full bg-gray-700 hover:bg-gray-600"
-                        >
-                            <Users size={20} />
-                        </button>
-                    </div>
+                            <button
+                                onClick={() => setChatOpen(!chatOpen)}
+                                className="p-3 rounded-full bg-gray-700 hover:bg-gray-600"
+                            >
+                                <MessageCircle size={20} />
+                            </button>
+                        </div>
+                    )}
                 </main>
+
+                {chatOpen && (
+                    <aside className="w-80 bg-[#1b1f2b] border-l border-gray-800 flex flex-col">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                            <span className="font-semibold text-gray-200">
+                                Chat
+                            </span>
+                            <button
+                                onClick={() => setChatOpen(false)}
+                                className="text-gray-400 hover:text-gray-200 text-sm"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                            {messages.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    className={`${
+                                        msg.user.id === currentUser.id
+                                            ? "text-blue-400 text-right"
+                                            : "text-gray-300 text-left"
+                                    }`}
+                                >
+                                    <p className="text-xs text-gray-500">
+                                        {msg.user.firstname} {msg.user.lastname}
+                                    </p>
+                                    <div className="bg-gray-800 inline-block px-3 py-2 rounded-lg mt-1">
+                                        {msg.message}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <form
+                            onSubmit={sendMessage}
+                            className="p-3 border-t border-gray-700 flex gap-2"
+                        >
+                            <input
+                                type="text"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                placeholder="Type a message..."
+                                className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                            <button
+                                type="submit"
+                                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm"
+                            >
+                                Send
+                            </button>
+                        </form>
+                    </aside>
+                )}
             </div>
         </div>
     );

@@ -227,7 +227,7 @@ export default function Classroom({
 
     return (
         <AuthenticatedLayout>
-            <div className="min-h-screen">
+            <div className="min-h-screen p-6">
                 {/* Header */}
                 <div className="border-b pb-4 mb-6">
                     <h1 className="text-3xl font-bold text-purple-700">

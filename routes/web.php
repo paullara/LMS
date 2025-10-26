@@ -9,6 +9,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\VideoCallMessageController;
 use App\Http\Controllers\ClassMaterialController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProgressController;
@@ -117,6 +118,9 @@ Route::get('/classes/json', [DashboardController::class, 'getClasses']);
 Route::get('/task/json', [DashboardController::class, 'getTasks']);
 Route::get('/instructor/classes-progress', [ProgressController::class, 'studentProgress']);
 Route::get('/tasks/{task}/refresh-progress', [TaskController::class, 'refreshProgress']);
+Route::get('/video-call/{id}/messages', [VideoCallMessageController::class, 'index']);
+Route::post('/video-call/{id}/messages', [VideoCallMessageController::class, 'store']);
+
 
 Route::middleware('auth')->group(function () {
     Route::post('/instructor/classroom/{id}/add-student', [InstructorController::class, 'addStudent'])->name('instructor.classroom.addStudent');
