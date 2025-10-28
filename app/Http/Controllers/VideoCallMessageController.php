@@ -7,31 +7,34 @@ use App\Models\VideoCallMessage;
 
 class VideoCallMessageController extends Controller
 {
-    public function index($id)
-    {
-        $messages = VideoCallMessage::with('user')
-            ->where('video_call_id', $id)
-            ->latest()
-            ->take(50)
-            ->get()
-            ->reverse()
-            ->values();
-        
-        return response()->json(['messages' => $messages]);
-    }
+    public function index(Request $request, $videoCallId)
+{
+    $afterId = $request->query('after_id', 0); // default 0
+    $messages = VideoCallMessage::with('user')
+        ->where('video_call_id', $videoCallId)
+        ->where('id', '>', $afterId)
+        ->orderBy('created_at', 'asc')
+        ->get();
 
-    public function store(Request $request, $id)
-    {
-        $request->validate(['message' => 'required|string|max:500']);
+    return response()->json(['messages' => $messages]);
+}
 
-        $message = VideoCallMessage::create([
-            'video_call_id' => $id,
-            'user_id' => auth()->id(),  
+
+    public function store(Request $request, $videoCallId)
+    {
+        $request->validate([
+            'message' => 'required|string|max:1000',
+        ]);
+
+        $msg = VideoCallMessage::create([
+            'video_call_id' => $videoCallId,
+            'user_id' => auth()->id(),
             'message' => $request->message,
         ]);
 
         return response()->json([
-            'message' => $message->load('user')
+            'message' => 'Message sent successfully.',
+            'data' => $msg->load('user'),
         ]);
     }
 }

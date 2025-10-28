@@ -117,7 +117,6 @@ Route::get('/students/json', [DashboardController::class, 'getStudents']);
 Route::get('/classes/json', [DashboardController::class, 'getClasses']);
 Route::get('/task/json', [DashboardController::class, 'getTasks']);
 Route::get('/instructor/classes-progress', [ProgressController::class, 'studentProgress']);
-Route::get('/tasks/{task}/refresh-progress', [TaskController::class, 'refreshProgress']);
 Route::get('/video-call/{id}/messages', [VideoCallMessageController::class, 'index']);
 Route::post('/video-call/{id}/messages', [VideoCallMessageController::class, 'store']);
 

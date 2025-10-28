@@ -32,6 +32,7 @@ export default function VideoCall({ videoCall }) {
     const [fullscreen, setFullscreen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
+    const [sending, setSending] = useState(false);
 
     const currentUser = auth.user;
 
@@ -41,7 +42,6 @@ export default function VideoCall({ videoCall }) {
 
         myPeer.on("open", (id) => setPeerId(id));
         myPeer.on("call", (call) => {
-            // answer without sending a local stream
             call.answer();
 
             call.on("stream", (remoteStream) => {
@@ -50,8 +50,6 @@ export default function VideoCall({ videoCall }) {
                 }
             });
 
-            // when remote peer closes the call (e.g. host stopped sharing),
-            // clear the video element so participants stop seeing the ended stream
             call.on("close", () => {
                 if (myVideoRef.current) {
                     myVideoRef.current.srcObject = null;
@@ -120,7 +118,6 @@ export default function VideoCall({ videoCall }) {
 
     const toggleMic = async () => {
         if (!micOn && !cameraOn) {
-            // if no camera stream exists yet
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: true,
             });
@@ -152,7 +149,6 @@ export default function VideoCall({ videoCall }) {
                 track.onended = () => stopSharing();
             });
 
-            // Send to participants
             if (auth.user.id === videoCall.host_id) {
                 const res = await axios.get(
                     `/video-call/${videoCall.id}/participants`
@@ -163,7 +159,6 @@ export default function VideoCall({ videoCall }) {
                             p.peer_id,
                             stream
                         );
-                        // store active call so we can close it later
                         activeCallsRef.current.set(p.peer_id, call);
                         calledPeers.current.add(p.peer_id);
                         call.on("error", (err) =>
@@ -182,14 +177,12 @@ export default function VideoCall({ videoCall }) {
     };
 
     const stopSharing = () => {
-        // stop local tracks
         if (streamRef.current) {
             streamRef.current.getTracks().forEach((track) => track.stop());
         }
         streamRef.current = null;
         myVideoRef.current.srcObject = null;
 
-        // close all outgoing PeerJS calls related to sharing so participants stop receiving stream
         activeCallsRef.current.forEach((call) => {
             try {
                 call.close();
@@ -258,42 +251,56 @@ export default function VideoCall({ videoCall }) {
         });
     }, [participants]);
 
+    // --- Chat Messages ---
     useEffect(() => {
         const fetchMessages = async () => {
             try {
+                const lastMessageId = messages.length
+                    ? messages[messages.length - 1].id
+                    : 0;
                 const res = await axios.get(
-                    `/video-call/${videoCall.id}/messages`
+                    `/video-call/${videoCall.id}/messages?after_id=${lastMessageId}`
                 );
-                setMessages(res.data.messages);
-            } catch (error) {
-                console.error("Failed to fetch messages:", error);
+                if (res.data.messages.length) {
+                    setMessages((prev) => {
+                        const existingIds = new Set(prev.map((m) => m.id));
+                        const newOnes = res.data.messages.filter(
+                            (m) => !existingIds.has(m.id)
+                        );
+                        return [...prev, ...newOnes];
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load messages:", err);
             }
         };
-        fetchMessages();
-        const interval = setInterval(fetchMessages, 1000);
-        return () => clearInterval(interval);
-    }, []);
 
-    // send message
+        fetchMessages();
+        const interval = setInterval(fetchMessages, 500);
+        return () => clearInterval(interval);
+    }, [messages]);
+
     const sendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
 
+        setSending(true);
+
         try {
             const res = await axios.post(
                 `/video-call/${videoCall.id}/messages`,
-                {
-                    message: newMessage,
-                }
+                { message: newMessage }
             );
-            setMessages((prev) => [...prev, res.data.message]);
+            setMessages((prev) => [...prev, res.data.data]);
             setNewMessage("");
-        } catch (error) {
-            console.error("Failed to send message:", error);
+        } catch (err) {
+            console.error("Failed to send message:", err);
+        } finally {
+            setSending(false);
         }
     };
 
-    // key command
+    // --- Keyboard ESC ---
     useEffect(() => {
         const handleEsc = (e) => {
             if (e.key === "Escape") setFullscreen(false);
@@ -445,6 +452,7 @@ export default function VideoCall({ videoCall }) {
                     )}
                 </main>
 
+                {/* Chat */}
                 {chatOpen && (
                     <aside className="w-80 bg-[#1b1f2b] border-l border-gray-800 flex flex-col">
                         <div className="flex justify-between items-center p-4 border-b border-gray-700">
@@ -478,6 +486,7 @@ export default function VideoCall({ videoCall }) {
                                 </div>
                             ))}
                         </div>
+
                         <form
                             onSubmit={sendMessage}
                             className="p-3 border-t border-gray-700 flex gap-2"
@@ -491,9 +500,14 @@ export default function VideoCall({ videoCall }) {
                             />
                             <button
                                 type="submit"
-                                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm"
+                                disabled={sending}
+                                className={`px-4 py-2 rounded-lg text-sm transition ${
+                                    sending
+                                        ? "bg-gray-600 cursor-not-allowed"
+                                        : "bg-blue-600 hover:bg-blue-700"
+                                }`}
                             >
-                                Send
+                                {sending ? "Sending..." : "Send"}
                             </button>
                         </form>
                     </aside>
