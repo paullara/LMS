@@ -33,6 +33,8 @@ export default function VideoCall({ videoCall }) {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
     const [sending, setSending] = useState(false);
+    const lastMessageRef = useRef(null);
+    const [lastId, setLastId] = useState(null);
 
     const currentUser = auth.user;
 
@@ -251,54 +253,72 @@ export default function VideoCall({ videoCall }) {
         });
     }, [participants]);
 
-    // --- Chat Messages ---
-    useEffect(() => {
-        const fetchMessages = async () => {
-            try {
-                const lastMessageId = messages.length
-                    ? messages[messages.length - 1].id
-                    : 0;
-                const res = await axios.get(
-                    `/video-call/${videoCall.id}/messages?after_id=${lastMessageId}`
-                );
-                if (res.data.messages.length) {
-                    setMessages((prev) => {
-                        const existingIds = new Set(prev.map((m) => m.id));
-                        const newOnes = res.data.messages.filter(
-                            (m) => !existingIds.has(m.id)
-                        );
-                        return [...prev, ...newOnes];
-                    });
+    const fetchMessages = async () => {
+        try {
+            const res = await axios.get(
+                `/video-call/${videoCall.id}/messages`,
+                {
+                    params: lastId ? { after_id: lastId } : {},
                 }
-            } catch (err) {
-                console.error("Failed to load messages:", err);
+            );
+
+            if (res.data.messages.length) {
+                setMessages((prev) => {
+                    const existingIds = new Set(prev.map((m) => m.id));
+                    const newOnes = res.data.messages.filter(
+                        (m) => !existingIds.has(m.id)
+                    );
+                    return [...prev, ...newOnes];
+                });
+
+                const newest = res.data.messages[res.data.messages.length - 1];
+                setLastId(newest.id);
             }
-        };
+        } catch (err) {
+            console.error("Fetch failed:", err);
+        }
+    };
 
+    useEffect(() => {
         fetchMessages();
-        const interval = setInterval(fetchMessages, 500);
+        const interval = setInterval(fetchMessages, 1000);
         return () => clearInterval(interval);
-    }, [messages]);
+    }, [videoCall.id]);
 
+    // 🟣 Send message
     const sendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
 
         setSending(true);
-
         try {
             const res = await axios.post(
                 `/video-call/${videoCall.id}/messages`,
-                { message: newMessage }
+                {
+                    message: newMessage,
+                }
             );
-            setMessages((prev) => [...prev, res.data.data]);
+
+            setMessages((prev) => {
+                const exists = prev.some((m) => m.id === res.data.data.id);
+                return exists ? prev : [...prev, res.data.data];
+            });
+
+            setLastId(res.data.data.id);
             setNewMessage("");
         } catch (err) {
-            console.error("Failed to send message:", err);
+            console.error("Send failed:", err);
         } finally {
             setSending(false);
         }
     };
+
+    // scroll to bottom on new message
+    useEffect(() => {
+        if (lastMessageRef.current) {
+            lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages]);
 
     // --- Keyboard ESC ---
     useEffect(() => {
