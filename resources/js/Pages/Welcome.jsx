@@ -338,7 +338,7 @@ export default function Welcome({ auth }) {
                     {/* Main Content */}
                     <motion.h1
                         id="hero-title"
-                        className="relative z-10 text-7xl font-semibold text-gray-800 mt-40 flex flex-wrap justify-center"
+                        className="relative z-10 text-7xl font-semibold text-gray-800 mt-14 flex flex-wrap justify-center"
                         variants={container}
                         initial="hidden"
                         animate="visible"
@@ -354,10 +354,10 @@ export default function Welcome({ auth }) {
                         ))}
                     </motion.h1>
 
-                    <p className="relative z-10 title-description text-xl text-gray-600 font-medium max-w-2xl mt-3 opacity-0">
+                    {/* <p className="relative z-10 title-description text-xl text-gray-600 font-medium max-w-2xl mt-3 opacity-0">
                         Easily access and manage learning materials in one
                         place.
-                    </p>
+                    </p> */}
 
                     {/* Hero Image */}
                     <div className="relative z-20 w-full max-w-6xl mx-auto flex items-center justify-center mt-6 px-4 rounded-2xl shadow-lg bg-white hero-image">

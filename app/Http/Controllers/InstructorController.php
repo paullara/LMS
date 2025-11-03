@@ -550,4 +550,16 @@ class InstructorController extends Controller
     {
         return Inertia::render('Instructor/Announcement');
     }
+
+    public function heartbeat($id)
+    {
+        $class = ClassModel::find($id);
+
+        if ($class) {
+            $class->is_active = now();
+            $class->save();
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

@@ -15,6 +15,7 @@ class ClassModel extends Model
         'name',
         'description',
         'subcode',
+        'chairman_id',
         'instructor_id',
         'photo',
         'schedule',
@@ -22,7 +23,10 @@ class ClassModel extends Model
         'section',
         'start_time',
         'end_time',
-        'code'
+        'code',
+        'program',
+        'day',
+        'is_active'
     ];
 
     public function instructor()

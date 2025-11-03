@@ -112,20 +112,32 @@ class DashboardController extends Controller
 
     public function getClasses()
     {
-        $instructor = Auth::user();
+        $instructorId = Auth::id();
+        
+        // Set Sunday as start of week
+        $currentWeekStart = now()->startOfWeek(Carbon::SUNDAY);
+        $currentWeekEnd   = now()->endOfWeek(Carbon::SUNDAY);
 
-        $classes = ClassModel::where('instructor_id', $instructor->id)->latest()->get();
+        $lastWeekStart = now()->subWeek()->startOfWeek(Carbon::SUNDAY);
+        $lastWeekEnd   = now()->subWeek()->endOfWeek(Carbon::SUNDAY);
 
-        $currentWeekCount = $classes->filter(fn($c) => $c->created_at->isCurrentWeek())->count();
-        $lastWeekCount = $classes->filter(fn($c) => $c->created_at->isLastWeek())->count();
+        $classes = ClassModel::where('instructor_id', $instructorId)
+            ->latest()
+            ->get();
 
-        $difference = $currentWeekCount - $lastWeekCount;
+        $currentWeekCount = ClassModel::where('instructor_id', $instructorId)
+            ->whereBetween('created_at', [$currentWeekStart, $currentWeekEnd])
+            ->count();
+
+        $lastWeekCount = ClassModel::where('instructor_id', $instructorId)
+            ->whereBetween('created_at', [$lastWeekStart, $lastWeekEnd])
+            ->count();
 
         return response()->json([
-            'classes' => $classes,
-            'current_week' => $currentWeekCount,
-            'last_week' => $lastWeekCount,
-            'new_this_week' => $difference > 0 ? $difference : 0,
+            'classes'         => $classes,
+            'current_week'    => $currentWeekCount,
+            'last_week'       => $lastWeekCount,
+            'new_this_week'   => max($currentWeekCount - $lastWeekCount, 0),
         ]);
     }
 

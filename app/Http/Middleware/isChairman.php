@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class isInstructor
+class isChairman
 {
     /**
      * Handle an incoming request.
@@ -16,7 +16,7 @@ class isInstructor
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->role !== 'instructor') {
+        if (Auth::check() && Auth::user()->role !== 'chairman') {
             return redirect()->intended('unauthorized');
         }
         return $next($request);

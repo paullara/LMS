@@ -7,11 +7,19 @@ import Assignments from "./Classroom/Assignments";
 import Quiz from "./Classroom/Quiz";
 import Members from "./Classroom/Members";
 import Grade from "./Classroom/Average";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import InstructorLayout from "@/Layouts/InstructorLayout";
+import axios from "axios";
 
 export default function TestClassroom({ classroom = { students: [] } }) {
     const [activeTab, setActiveTab] = useState("general");
+    useEffect(() => {
+        const interval = setInterval(() => {
+            axios.post(`/classroom/heartbeat/${classroom.id}`).catch(() => {});
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [classroom.id]);
     return (
         <InstructorLayout>
             <div className="space-y-4">

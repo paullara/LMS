@@ -33,6 +33,7 @@ export default {
                 picture: "100px",
                 top: "85px",
                 welcomehero: "700px",
+                anauthorized: "300px",
             },
             width: {
                 container: "300px",

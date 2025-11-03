@@ -158,6 +158,12 @@ export default function ClassListTest() {
                                             <div className="px-5 space-y-1 text-sm text-gray-700">
                                                 <p>
                                                     <span className="font-semibold text-indigo-700">
+                                                        Code:
+                                                    </span>{" "}
+                                                    {cls.code || "—"}
+                                                </p>
+                                                <p>
+                                                    <span className="font-semibold text-indigo-700">
                                                         Section:
                                                     </span>{" "}
                                                     {cls.section || "—"}

@@ -5,6 +5,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\HandleCors;
 use App\Http\Middleware\UpdateLastSeen;
+use App\Http\Middleware\isActiveClass;
+
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,7 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\isAdmin::class,
             'instructor' => \App\Http\Middleware\isInstructor::class,
+            'chairman' => \App\Http\Middleware\isChairman::class,
             'lastseen' => UpdateLastSeen::class,
+                'activeclass' => \App\Http\Middleware\isActiveClass::class,
         ]);
         $middleware->append(
             HandleCors::class,

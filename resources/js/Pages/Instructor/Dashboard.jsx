@@ -71,6 +71,11 @@ export default function Dashboard() {
                 const res = await axios.get("/classes/json");
                 setClasses(res.data.classes);
                 setClassGrowth(res.data.new_this_week);
+                console.log(
+                    "new and growth:",
+                    res.data.classes,
+                    res.data.new_this_week
+                );
             } catch (error) {
                 console.error("Error fetching classes", error);
             }
@@ -78,7 +83,7 @@ export default function Dashboard() {
         fetchClasses();
         // const interval = setInterval(fetchClasses, 2000);
         // return () => clearInterval(interval);
-    });
+    }, []);
 
     useEffect(() => {
         const fetchTasks = async () => {
@@ -175,10 +180,13 @@ export default function Dashboard() {
                                 </div>
                             </div>
                             <p className="text-4xl font-bold text-gray-900 mt-4">
-                                {classes.length}
+                                {Array.isArray(classes)
+                                    ? classes.length
+                                    : classes}
                             </p>
+
                             <p className="text-sm text-gray-500">
-                                {classGrowth} {""}new this week
+                                {classGrowth} new this week
                             </p>
                         </div>
 

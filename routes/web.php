@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\AssController;
 use App\Http\Controllers\AverageController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\ChairmanController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\InstructorController;
@@ -32,6 +33,10 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
+
+Route::get('/unauthorized', function () {
+    return Inertia::render('Unauthorized');
+})->name('unauthorized');;
 
 Route::get('/instructor/register', [RegisterInstructorController::class, 'create'])->name('instructor.create');
 Route::post('/instructor/register', [RegisterInstructorController::class, 'store'])->name('instructor.register');
@@ -90,7 +95,7 @@ Route::middleware(['auth', 'instructor'])->group(function () {
     Route::delete('/instructor/classroom/{id}', [InstructorController::class, 'destroy'])->name('classroom.destroy');
     Route::post('/instructor/classes', [InstructorController::class, 'storeClassroom'])->name('instructor.classes.store');
     Route::get('/instructor/classroom/{id}', [InstructorController::class, 'show'])->name('instructor.classroom.show');
-    Route::get('/classroom/show/{id}', [InstructorController::class, 'testClassroom'])->name('test.classroom');
+    Route::get('/classroom/show/{id}', [InstructorController::class, 'testClassroom'])->middleware('activeclass')->name('test.classroom');
     Route::post('/quiz', [QuizController::class, 'store'])->name('quiz.store');
     Route::get('/students/search', [InstructorController::class, 'searchStudents']);
     Route::post('/instructor/{id}/add-member', [InstructorController::class, 'addStudentToClassroom']);
@@ -98,8 +103,27 @@ Route::middleware(['auth', 'instructor'])->group(function () {
     Route::delete('/quiz/{quizId}', [InstructorController::class, 'removeQuiz']);
     Route::get('/instructor/student-progress', [InstructorController::class, 'studentProgress'])->name('instructor.student.progress');
     Route::get('/instructor/announcement', [InstructorController::class, 'announcement'])->name('instructor.announcement');
-   
+    Route::post('/classroom/heartbeat/{id}', [InstructorController::class, 'heartbeat']);
+    Route::get('/instructor/notifications', function () {
+        return Inertia::render('Instructor/Notification');
+    })->name('instructor.notification');
+    Route::get('/notifications', function () {
+        return response()->json([
+            'notifications' => auth()->user()->notifications
+        ]);
+    });
 });
+
+Route::middleware(['auth', 'chairman'])->group(function () {
+    Route::get('/chairman/dashboard', [ChairmanController::class, 'dashboard'])->name('chairman.dashboard');
+    Route::get('/chairman/create/classes', [ChairmanController::class, 'createClasses'])->name('chairman.create.classes');
+    Route::get('/chairman/created/classes', [ChairmanController::class, 'createdClasses']);
+    Route::post('/chairman/create/class', [ChairmanController::class, 'storeClassroom']);
+    Route::get('/chairman/classes', [ChairmanController::class, 'classes'])->name('chairman.created.classes');
+    Route::get('/chairman/get/instructors', [ChairmanController::class, 'getInstructors']);
+    
+});
+
 Route::get('/classroom/{id}/members', [InstructorController::class, 'getMembers']);
 Route::get('/student/{id}/grade', [AverageController::class, 'grade']);
 Route::get('/threads/{id}', [InstructorController::class, 'getThreads']);
@@ -145,6 +169,9 @@ Route::get('/video-call/check/{classroom}', [VideoCallController::class, 'check'
 Route::get('/video-call/{id}/participants', [VideoCallController::class, 'participants']);
 Route::post('/video-call/{id}/register-peer', [VideoCallController::class, 'registerPeer']);
 Route::post('/video-call/{id}/leave', [VideoCallController::class, 'leave']);
+
+// Anuthorized route
+
 
 // refactor ver
 Route::post('/class/materials/{classrom}', [ClassMaterialController::class, 'store']);
