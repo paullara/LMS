@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('quizzes', function (Blueprint $table) {
-            $table->enum('quiz_type', ['objective', 'essay', 'combined'])->default('objective');
+        Schema::table('questions', function (Blueprint $table) {
+            $table->integer('points')->nullable()->after('reference_answer');
+            $table->dropColumn(['max_score', 'min_score']);
         });
     }
 
@@ -21,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('quizzes', function (Blueprint $table) {
-            $table->dropColumn('quiz_type');
+        Schema::table('questions', function (Blueprint $table) {
+            $table->dropColumn('points');
         });
     }
 };

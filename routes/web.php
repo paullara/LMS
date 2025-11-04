@@ -96,7 +96,7 @@ Route::middleware(['auth', 'instructor'])->group(function () {
     Route::post('/instructor/classes', [InstructorController::class, 'storeClassroom'])->name('instructor.classes.store');
     Route::get('/instructor/classroom/{id}', [InstructorController::class, 'show'])->name('instructor.classroom.show');
     Route::get('/classroom/show/{id}', [InstructorController::class, 'testClassroom'])->middleware('activeclass')->name('test.classroom');
-    Route::post('/quiz', [QuizController::class, 'store'])->name('quiz.store');
+    // Route::post('/quiz', [QuizController::class, 'store'])->name('quiz.store');
     Route::get('/students/search', [InstructorController::class, 'searchStudents']);
     Route::post('/instructor/{id}/add-member', [InstructorController::class, 'addStudentToClassroom']);
     Route::delete('/classroom/{classId}/remove-student/{studentId}', [InstructorController::class, 'removeStudent']);
@@ -112,6 +112,7 @@ Route::middleware(['auth', 'instructor'])->group(function () {
             'notifications' => auth()->user()->notifications
         ]);
     });
+    Route::get('/instructor/classlist/improved', [InstructorController::class, 'improvedClassList'])->name('improved.classList');
 });
 
 Route::middleware(['auth', 'chairman'])->group(function () {

@@ -3,7 +3,6 @@ import axios from "axios";
 
 export default function Quiz({ classId }) {
     const [quizList, setQuizList] = useState([]);
-    const [selectedQuiz, setSelectedQuiz] = useState(null);
     const [quizData, setQuizData] = useState({
         class_id: classId,
         title: "",
@@ -11,7 +10,7 @@ export default function Quiz({ classId }) {
         start_time: "",
         end_time: "",
         duration_minutes: "",
-        quiz_type: "objective",
+        quiz_type: "combined",
         questions: [
             {
                 type: "multiple_choice",
@@ -75,26 +74,17 @@ export default function Quiz({ classId }) {
     };
 
     const addQuestion = () => {
-        const newQuestion =
-            quizData.quiz_type === "essay"
-                ? {
-                      type: "essay",
-                      question_text: "",
-                      correct_answer: null,
-                      choices: [],
-                  }
-                : {
-                      type: "multiple_choice",
-                      question_text: "",
-                      correct_answer: "",
-                      choices: [
-                          { label: "A", text: "" },
-                          { label: "B", text: "" },
-                          { label: "C", text: "" },
-                          { label: "D", text: "" },
-                      ],
-                  };
-
+        const newQuestion = {
+            type: "multiple_choice",
+            question_text: "",
+            correct_answer: "",
+            choices: [
+                { label: "A", text: "" },
+                { label: "B", text: "" },
+                { label: "C", text: "" },
+                { label: "D", text: "" },
+            ],
+        };
         setQuizData((prev) => ({
             ...prev,
             questions: [...prev.questions, newQuestion],
@@ -109,74 +99,66 @@ export default function Quiz({ classId }) {
         }));
     };
 
-    // Quiz type change handler
-    const handleQuizTypeChange = (e) => {
-        const newType = e.target.value;
-
-        setQuizData((prev) => ({
-            ...prev,
-            quiz_type: newType,
-            questions: prev.questions.map((q) => {
-                if (newType === "essay") {
-                    return {
-                        ...q,
-                        type: "essay",
-                        correct_answer: null,
-                        choices: [],
-                    };
-                } else {
-                    return {
-                        ...q,
-                        type: "multiple_choice",
-                        correct_answer: "",
-                        choices: [
-                            { label: "A", text: "" },
-                            { label: "B", text: "" },
-                            { label: "C", text: "" },
-                            { label: "D", text: "" },
-                        ],
-                    };
-                }
-            }),
-        }));
+    const handleQuestionTypeChange = (idx, newType) => {
+        const updated = [...quizData.questions];
+        if (newType === "essay") {
+            updated[idx] = {
+                type: "essay",
+                question_text: updated[idx].question_text,
+                reference_answer: "",
+                max_score: 5, // default essay points
+                choices: [],
+            };
+        } else if (newType === "identification") {
+            updated[idx] = {
+                type: "identification",
+                question_text: updated[idx].question_text,
+                correct_answer: "",
+                choices: [],
+            };
+        } else {
+            updated[idx] = {
+                type: "multiple_choice",
+                question_text: updated[idx].question_text,
+                correct_answer: "",
+                choices: [
+                    { label: "A", text: "" },
+                    { label: "B", text: "" },
+                    { label: "C", text: "" },
+                    { label: "D", text: "" },
+                ],
+            };
+        }
+        setQuizData({ ...quizData, questions: updated });
     };
 
     const handleCreateQuiz = async (e) => {
         e.preventDefault();
 
-        // Frontend validation
+        // Validation
         for (let i = 0; i < quizData.questions.length; i++) {
             const q = quizData.questions[i];
-
             if (!q.question_text.trim()) {
                 alert(`Question ${i + 1}: Question text is required`);
                 return;
             }
-
-            if (quizData.quiz_type === "objective") {
-                if (q.type === "multiple_choice") {
-                    if (q.choices.some((c) => !c.text.trim())) {
-                        alert(
-                            `Question ${i + 1}: All 4 choices must be filled`
-                        );
-                        return;
-                    }
-                    if (!q.correct_answer) {
-                        alert(
-                            `Question ${
-                                i + 1
-                            }: Please select the correct answer`
-                        );
-                        return;
-                    }
+            if (q.type === "multiple_choice") {
+                if (q.choices.some((c) => !c.text.trim())) {
+                    alert(`Question ${i + 1}: All choices must be filled`);
+                    return;
                 }
-
-                if (q.type === "identification") {
-                    if (!q.correct_answer || !q.correct_answer.trim()) {
-                        alert(`Question ${i + 1}: Correct answer is required`);
-                        return;
-                    }
+                if (!q.correct_answer) {
+                    alert(`Question ${i + 1}: Select the correct answer`);
+                    return;
                 }
+            }
+            if (q.type === "identification" && !q.correct_answer.trim()) {
+                alert(`Question ${i + 1}: Correct answer is required`);
+                return;
+            }
+            if (q.type === "essay" && (!q.max_score || q.max_score <= 0)) {
+                alert(`Question ${i + 1}: Essay points must be greater than 0`);
+                return;
             }
         }
 
@@ -187,21 +169,23 @@ export default function Quiz({ classId }) {
             start_time: quizData.start_time,
             end_time: quizData.end_time,
             duration_minutes: quizData.duration_minutes,
-            quiz_type: quizData.quiz_type,
+            quiz_type: "combined",
             questions: quizData.questions.map((q) => ({
-                question_text: q.question_text || "",
+                question_text: q.question_text,
                 type: q.type,
                 correct_answer: q.correct_answer ?? null,
                 reference_answer: q.reference_answer ?? null,
+                points: q.points ?? null,
                 choices: Array.isArray(q.choices) ? q.choices : [],
             })),
         };
 
         try {
-            const response = await axios.post("/quiz", payload);
+            const response = await axios.post("/api/quiz", payload, {
+                headers: { "Content-Type": "application/json" },
+            });
             console.log("Quiz created:", response.data);
 
-            // Reset form
             setQuizData({
                 class_id: classId,
                 title: "",
@@ -209,7 +193,7 @@ export default function Quiz({ classId }) {
                 start_time: "",
                 end_time: "",
                 duration_minutes: "",
-                quiz_type: "objective",
+                quiz_type: "combined",
                 questions: [
                     {
                         type: "multiple_choice",
@@ -226,22 +210,13 @@ export default function Quiz({ classId }) {
             });
 
             setQuizList((prev) => [...prev, response.data.quiz]);
-            setSelectedQuiz(null);
         } catch (error) {
-            if (error.response && error.response.status === 422) {
-                console.error("Validation errors:", error.response.data.errors);
-                alert("Validation failed. Check console for details.");
-            } else {
-                console.error("Failed to create quiz", error);
-            }
+            console.error("Failed to create quiz", error);
         }
     };
 
     const handleRemoveQuiz = async (quizId) => {
-        const confirmed = window.confirm(
-            "Are you sure you want to delete this quiz?"
-        );
-        if (!confirmed) return;
+        if (!window.confirm("Delete this quiz?")) return;
         try {
             await axios.delete(`/quiz/${quizId}`);
             setQuizList((prev) => prev.filter((quiz) => quiz.id !== quizId));
@@ -281,13 +256,7 @@ export default function Quiz({ classId }) {
                                     </span>
                                 </div>
                                 <button
-                                    className="mt-3 px-4 py-1 bg-blue-500 text-white rounded text-sm"
-                                    onClick={() => setSelectedQuiz(quiz)}
-                                >
-                                    View
-                                </button>
-                                <button
-                                    className="mt-3 ml-4 px-4 py-1 bg-red-500 text-white rounded text-sm"
+                                    className="mt-3 px-4 py-1 bg-red-500 text-white rounded text-sm"
                                     onClick={() => handleRemoveQuiz(quiz.id)}
                                 >
                                     Delete
@@ -303,7 +272,7 @@ export default function Quiz({ classId }) {
                 onSubmit={handleCreateQuiz}
                 className="bg-white p-6 rounded-lg shadow-md space-y-4 overflow-y-auto max-h-[85vh]"
             >
-                <h2 className="text-xl font-semibold">Create Quiz</h2>
+                <h2 className="text-xl font-semibold">Create Combined Quiz</h2>
 
                 <input
                     type="text"
@@ -338,6 +307,7 @@ export default function Quiz({ classId }) {
                         className="border rounded px-3 py-2"
                     />
                 </div>
+
                 <input
                     type="number"
                     name="duration_minutes"
@@ -346,17 +316,6 @@ export default function Quiz({ classId }) {
                     readOnly
                     className="w-full border rounded px-3 py-2"
                 />
-
-                <select
-                    value={quizData.quiz_type}
-                    onChange={handleQuizTypeChange}
-                    className="border rounded px-2 py-1 mb-4"
-                >
-                    <option value="objective">
-                        Objective (MCQ & Identification)
-                    </option>
-                    <option value="essay">Essay</option>
-                </select>
 
                 <div className="space-y-4">
                     {quizData.questions.map((q, idx) => (
@@ -394,94 +353,90 @@ export default function Quiz({ classId }) {
                                 required
                             />
 
-                            {quizData.quiz_type === "objective" && (
-                                <>
-                                    <select
-                                        value={q.type}
-                                        onChange={(e) =>
-                                            handleQuestionChange(
-                                                idx,
-                                                "type",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="border rounded px-2 py-1 mb-2"
+                            <select
+                                value={q.type}
+                                onChange={(e) =>
+                                    handleQuestionTypeChange(
+                                        idx,
+                                        e.target.value
+                                    )
+                                }
+                                className="border rounded px-2 py-1 mb-2"
+                            >
+                                <option value="multiple_choice">
+                                    Multiple Choice
+                                </option>
+                                <option value="identification">
+                                    Identification
+                                </option>
+                                <option value="essay">Essay</option>
+                            </select>
+
+                            {q.type === "multiple_choice" &&
+                                q.choices.map((choice, cIdx) => (
+                                    <div
+                                        key={cIdx}
+                                        className="flex items-center mb-2"
                                     >
-                                        <option value="multiple_choice">
-                                            Multiple Choice
-                                        </option>
-                                        <option value="identification">
-                                            Identification
-                                        </option>
-                                    </select>
-
-                                    {q.type === "multiple_choice" &&
-                                        q.choices.map((choice, cIdx) => (
-                                            <div
-                                                key={cIdx}
-                                                className="flex items-center mb-2"
-                                            >
-                                                <span className="w-6">
-                                                    {choice.label}
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    value={choice.text}
-                                                    onChange={(e) =>
-                                                        handleChoiceChange(
-                                                            idx,
-                                                            cIdx,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder={`Choice ${choice.label}`}
-                                                    className="flex-1 border rounded px-2 py-1"
-                                                    required
-                                                />
-                                            </div>
-                                        ))}
-
-                                    {q.type === "multiple_choice" && (
-                                        <select
-                                            value={q.correct_answer || ""}
-                                            onChange={(e) =>
-                                                handleQuestionChange(
-                                                    idx,
-                                                    "correct_answer",
-                                                    e.target.value
-                                                )
-                                            }
-                                            className="border rounded px-2 py-1 mt-2"
-                                        >
-                                            <option value="">
-                                                Select Correct Answer
-                                            </option>
-                                            <option value="A">A</option>
-                                            <option value="B">B</option>
-                                            <option value="C">C</option>
-                                            <option value="D">D</option>
-                                        </select>
-                                    )}
-
-                                    {q.type === "identification" && (
+                                        <span className="w-6">
+                                            {choice.label}
+                                        </span>
                                         <input
                                             type="text"
-                                            value={q.correct_answer || ""}
+                                            value={choice.text}
                                             onChange={(e) =>
-                                                handleQuestionChange(
+                                                handleChoiceChange(
                                                     idx,
-                                                    "correct_answer",
+                                                    cIdx,
                                                     e.target.value
                                                 )
                                             }
-                                            placeholder="Correct Answer"
-                                            className="w-full border rounded px-3 py-2 mb-2"
+                                            placeholder={`Choice ${choice.label}`}
+                                            className="flex-1 border rounded px-2 py-1"
+                                            required
                                         />
-                                    )}
-                                </>
+                                    </div>
+                                ))}
+
+                            {q.type === "multiple_choice" && (
+                                <select
+                                    value={q.correct_answer || ""}
+                                    onChange={(e) =>
+                                        handleQuestionChange(
+                                            idx,
+                                            "correct_answer",
+                                            e.target.value
+                                        )
+                                    }
+                                    className="border rounded px-2 py-1 mt-2"
+                                >
+                                    <option value="">
+                                        Select Correct Answer
+                                    </option>
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                </select>
                             )}
 
-                            {quizData.quiz_type === "essay" && (
+                            {q.type === "identification" && (
+                                <input
+                                    type="text"
+                                    value={q.correct_answer || ""}
+                                    onChange={(e) =>
+                                        handleQuestionChange(
+                                            idx,
+                                            "correct_answer",
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="Correct Answer"
+                                    className="w-full border rounded px-3 py-2 mb-2"
+                                />
+                            )}
+
+                            {q.type === "essay" && (
                                 <>
                                     <input
                                         type="text"
@@ -496,10 +451,21 @@ export default function Quiz({ classId }) {
                                         }
                                         className="w-full border rounded px-3 py-2 mb-2"
                                     />
-                                    <p className="text-gray-500 text-sm">
-                                        Student will write essay. Instructor
-                                        will check manually.
-                                    </p>
+                                    <input
+                                        type="number"
+                                        placeholder="Points"
+                                        min="1"
+                                        value={q.points || ""}
+                                        onChange={(e) =>
+                                            handleQuestionChange(
+                                                idx,
+                                                "points",
+                                                Number(e.target.value)
+                                            )
+                                        }
+                                        className="w-full border rounded px-3 py-2 mb-2"
+                                        required
+                                    />
                                 </>
                             )}
                         </div>

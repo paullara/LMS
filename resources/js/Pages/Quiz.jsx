@@ -22,7 +22,7 @@ export default function Quiz({ classId }) {
         fetchQuizzes();
     }, [classId]);
 
-    // Fetch submissions and auto-refresh
+    // Fetch submissions
     useEffect(() => {
         const fetchQuizSubmission = async () => {
             try {
@@ -38,7 +38,7 @@ export default function Quiz({ classId }) {
         return () => clearInterval(interval);
     }, []);
 
-    // Update finished quiz IDs whenever submissions update
+    // Update finished quiz IDs
     useEffect(() => {
         const finishedIds = quizSubmissions
             .filter((sub) => sub.status === "finished" && sub.quiz_id)
@@ -46,9 +46,12 @@ export default function Quiz({ classId }) {
         setFinishQuizIds(finishedIds);
     }, [quizSubmissions]);
 
-    // Open quiz
+    // Handle opening quiz with persistent timer
     const handleOpenQuiz = (quiz) => {
         setSelectedQuiz(quiz);
+
+        const quizKey = `quiz_${quiz.id}_timer`;
+        const savedData = JSON.parse(localStorage.getItem(quizKey));
 
         // Initialize answers
         const initialAnswers = {};
@@ -57,24 +60,57 @@ export default function Quiz({ classId }) {
         });
         setStudentAnswers(initialAnswers);
 
-        // Timer
         const duration = quiz.duration_minutes * 60;
-        setTimeLeft(duration);
+        let remainingTime = duration;
+
+        if (savedData && savedData.startTime) {
+            const elapsed = Math.floor(
+                (Date.now() - savedData.startTime) / 1000
+            );
+            remainingTime = Math.max(duration - elapsed, 0);
+        } else {
+            localStorage.setItem(
+                quizKey,
+                JSON.stringify({ startTime: Date.now() })
+            );
+        }
+
+        setTimeLeft(remainingTime);
+    };
+
+    // Timer countdown with localStorage sync
+    useEffect(() => {
+        if (!selectedQuiz || timeLeft === null) return;
+
+        if (timeLeft <= 0) {
+            handleSubmitAnswers(selectedQuiz.id);
+            return;
+        }
+
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
-                if (prev <= 1) {
+                const newTime = prev - 1;
+                if (newTime <= 0) {
                     clearInterval(timer);
-                    handleSubmitAnswers(quiz.id);
-                    return 0;
+                    handleSubmitAnswers(selectedQuiz.id);
                 }
-                return prev - 1;
+                return newTime;
             });
         }, 1000);
 
         return () => clearInterval(timer);
+    }, [selectedQuiz, timeLeft]);
+
+    // Format timer
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60)
+            .toString()
+            .padStart(2, "0");
+        const s = (seconds % 60).toString().padStart(2, "0");
+        return `${m}:${s}`;
     };
 
-    // Select an MCQ choice
+    // Select choice
     const handleSelectChoice = (questionId, choiceLabel) => {
         setStudentAnswers((prev) => ({
             ...prev,
@@ -82,13 +118,14 @@ export default function Quiz({ classId }) {
         }));
     };
 
-    // Submit quiz
+    // Submit answers
     const handleSubmitAnswers = async (quizId) => {
         try {
             await axios.post(`/quizzes/${quizId}/submit`, {
                 answers: studentAnswers,
             });
 
+            localStorage.removeItem(`quiz_${quizId}_timer`);
             alert("Quiz submitted successfully!");
             setSelectedQuiz(null);
             setStudentAnswers({});
@@ -101,90 +138,82 @@ export default function Quiz({ classId }) {
         }
     };
 
-    // Format timer
-    const formatTime = (seconds) => {
-        const m = Math.floor(seconds / 60)
-            .toString()
-            .padStart(2, "0");
-        const s = (seconds % 60).toString().padStart(2, "0");
-        return `${m}:${s}`;
-    };
-
     return (
-        <div className="w-full mx-auto">
-            <h2 className="text-lg font-bold mb-2">Available Quizzes</h2>
-            {quizList.length === 0 ? (
-                <div className="text-gray-500">No quizzes yet.</div>
-            ) : (
-                <ul className="space-y-4">
-                    {quizList.map((quiz) => {
-                        const isFinished = finishedQuizIds.includes(quiz.id);
-                        const now = new Date();
-                        const quizEndTime = new Date(quiz.end_time);
-                        const isExpired = now > quizEndTime;
+        <div className="flex flex-col md:flex-row gap-6 w-full max-w-6xl mx-auto p-6">
+            <div className="md:w-1/3 bg-white rounded-2xl shadow-lg p-6 border border-gray-100 overflow-y-auto max-h-[85vh]">
+                <h2 className="text-xl font-bold mb-4 text-purple-700">
+                    Available Quizzes
+                </h2>
+                {quizList.length === 0 ? (
+                    <p className="text-gray-500 text-sm">
+                        No quizzes available.
+                    </p>
+                ) : (
+                    <ul className="space-y-4">
+                        {quizList.map((quiz) => {
+                            const isFinished = finishedQuizIds.includes(
+                                quiz.id
+                            );
+                            const now = new Date();
+                            const quizEndTime = new Date(quiz.end_time);
+                            const isExpired = now > quizEndTime;
 
-                        return (
-                            <li
-                                key={quiz.id}
-                                className="border rounded p-4 bg-gray-50"
-                            >
-                                <h3 className="font-semibold text-purple-700">
-                                    {quiz.title}
-                                </h3>
-                                <p className="text-gray-500 text-sm mb-1">
-                                    {quiz.description}
-                                </p>
-
-                                <button
-                                    className={`mt-2 px-4 py-1 rounded text-md text-white ${
-                                        isFinished || isExpired
-                                            ? "bg-gray-400 cursor-not-allowed"
-                                            : "bg-blue-500"
+                            return (
+                                <li
+                                    key={quiz.id}
+                                    className={`p-4 rounded-xl border shadow-sm transition ${
+                                        isFinished
+                                            ? "bg-gray-100 border-gray-200"
+                                            : "bg-white hover:shadow-md"
                                     }`}
-                                    onClick={() => handleOpenQuiz(quiz)}
-                                    disabled={isFinished || isExpired}
                                 >
-                                    {isFinished
-                                        ? "Finished"
-                                        : isExpired
-                                        ? "Expired"
-                                        : "Open"}
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
-            )}
+                                    <h3 className="font-semibold text-purple-700 text-lg">
+                                        {quiz.title}
+                                    </h3>
+                                    <p className="text-gray-500 text-sm mb-2">
+                                        {quiz.description}
+                                    </p>
 
-            {/* Modal Quiz */}
-            {selectedQuiz && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 overflow-y-auto max-h-[90vh]">
-                        <button
-                            className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                            onClick={() => {
-                                setSelectedQuiz(null);
-                                setStudentAnswers({});
-                                setTimeLeft(null);
-                            }}
-                        >
-                            ✕
-                        </button>
+                                    <button
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${
+                                            isFinished || isExpired
+                                                ? "bg-gray-400 cursor-not-allowed"
+                                                : "bg-blue-500 hover:bg-blue-600"
+                                        }`}
+                                        onClick={() => handleOpenQuiz(quiz)}
+                                        disabled={isFinished || isExpired}
+                                    >
+                                        {isFinished
+                                            ? "Finished"
+                                            : isExpired
+                                            ? "Expired"
+                                            : "Open Quiz"}
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </div>
 
-                        <div className="border-b pb-4 mb-6">
+            {/* RIGHT: Quiz Answer Area */}
+            <div className="md:w-2/3 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                {!selectedQuiz ? (
+                    <div className="text-center text-gray-500">
+                        <p>Select a quiz to begin.</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex justify-between items-center mb-6 border-b pb-3">
                             <h2 className="text-2xl font-bold text-purple-700">
                                 {selectedQuiz.title}
                             </h2>
-                            <p className="text-gray-500">
-                                {selectedQuiz.description}
-                            </p>
+                            {timeLeft !== null && (
+                                <div className="text-red-600 font-semibold bg-red-100 rounded-lg px-4 py-2">
+                                    ⏳ {formatTime(timeLeft)}
+                                </div>
+                            )}
                         </div>
-
-                        {timeLeft !== null && (
-                            <div className="mb-6 text-lg font-semibold text-red-600 bg-red-100 rounded-lg px-4 py-2 inline-block">
-                                ⏳ Time Remaining: {formatTime(timeLeft)}
-                            </div>
-                        )}
 
                         <form
                             onSubmit={(e) => {
@@ -203,7 +232,6 @@ export default function Quiz({ classId }) {
                                     </p>
 
                                     <div className="space-y-2">
-                                        {/* Multiple Choice */}
                                         {question.type === "multiple_choice" &&
                                             question.choices.map((choice) => (
                                                 <label
@@ -236,11 +264,9 @@ export default function Quiz({ classId }) {
                                                 </label>
                                             ))}
 
-                                        {/* Identification */}
                                         {question.type === "identification" && (
                                             <input
                                                 type="text"
-                                                name={`question_${question.id}`}
                                                 value={
                                                     studentAnswers[
                                                         question.id
@@ -256,14 +282,12 @@ export default function Quiz({ classId }) {
                                                     )
                                                 }
                                                 className="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                placeholder="Type your answer here"
+                                                placeholder="Type your answer"
                                             />
                                         )}
 
-                                        {/* Essay */}
                                         {question.type === "essay" && (
                                             <textarea
-                                                name={`question_${question.id}`}
                                                 value={
                                                     studentAnswers[
                                                         question.id
@@ -279,7 +303,7 @@ export default function Quiz({ classId }) {
                                                     )
                                                 }
                                                 className="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                placeholder="Write your essay here"
+                                                placeholder="Write your essay answer"
                                             />
                                         )}
                                     </div>
@@ -293,9 +317,9 @@ export default function Quiz({ classId }) {
                                 Submit Quiz
                             </button>
                         </form>
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </div>
         </div>
     );
 }

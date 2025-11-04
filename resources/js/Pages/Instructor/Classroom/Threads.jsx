@@ -212,13 +212,14 @@ export default function Threads({ classId }) {
                     onChange={(e) => setThreadData(e.target.value)}
                     className="w-full border p-3 rounded"
                     rows="3"
+                    placeholder="Post in classroom"
                     required
                 />
                 <button
                     type="submit"
                     className="mt-2 bg-purple-500 text-white px-4 py-2 rounded"
                 >
-                    Post in classroom
+                    Start Discussion
                 </button>
             </form>
 

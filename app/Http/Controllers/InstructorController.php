@@ -201,6 +201,11 @@ class InstructorController extends Controller
         return Inertia::render('Instructor/ClassListTest');
     }
 
+    public function improvedClassList()
+    {
+        return Inertia::render('Instructor/ImprovedUI');
+    }
+
     public function testClassroom($id)
     {
         $classroom = ClassModel::with('students')

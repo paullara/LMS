@@ -77,8 +77,17 @@ export default function InstructorLayout({ header, children }) {
                         </h1>
                     </Link>
 
-                    <Link
+                    {/* <Link
                         href={route("test.list")}
+                        className="flex items-center gap-2 mb-6"
+                    >
+                        <h1 className="text-black text-lg font-medium">
+                            Classroom
+                        </h1>
+                    </Link> */}
+
+                    <Link
+                        href={route("improved.classList")}
                         className="flex items-center gap-2 mb-6"
                     >
                         <h1 className="text-black text-lg font-medium">

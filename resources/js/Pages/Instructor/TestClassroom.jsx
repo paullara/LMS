@@ -27,7 +27,7 @@ export default function TestClassroom({ classroom = { students: [] } }) {
                     <div className="flex flex-col items-start gap-4 ">
                         <div className="flex items-start ">
                             <Link
-                                href={route("test.list")}
+                                href={route("improved.classList")}
                                 className="hover:text-blue-600 pointer-cursor"
                             >
                                 <h2>View All Classroom</h2>

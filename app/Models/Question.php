@@ -14,6 +14,7 @@ class Question extends Model
         'reference_answer',
         'min_score',
         'max_score',
+        'points',
     ];
 
     public function quiz()
