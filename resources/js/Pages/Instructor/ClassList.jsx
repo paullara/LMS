@@ -8,7 +8,7 @@ export default function ClassList({ classList }) {
                 <div className="max-w-7xl mx-auto">
                     <div className="flex justify-between items-center mb-8">
                         <h2 className="text-3xl font-bold text-indigo-800 tracking-tight">
-                            Your Classes
+                            Your Classes nIgga
                         </h2>
                         <Link href={route("instructor.create")}>
                             Create New

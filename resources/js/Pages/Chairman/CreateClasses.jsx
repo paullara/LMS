@@ -12,7 +12,7 @@ export default function CreateClasses() {
         start_time: "",
         end_time: "",
         instructor_id: "",
-        photo: null,
+        // photo: null,
         yearlevel: "",
         section: "",
         program: "",
@@ -48,17 +48,11 @@ export default function CreateClasses() {
         setLoading(true);
         setErrors({});
 
-        const payload = new FormData();
-        Object.keys(formData).forEach((key) => {
-            payload.append(key, formData[key]);
-        });
-
         try {
-            await axios.post("/chairman/create/class", payload, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
+            await axios.post("/chairman/classes/draft", formData);
 
             alert("Class created successfully!");
+
             setFormData({
                 name: "",
                 description: "",
@@ -66,14 +60,13 @@ export default function CreateClasses() {
                 start_time: "",
                 end_time: "",
                 instructor_id: "",
-                photo: null,
                 yearlevel: "",
                 section: "",
                 program: "",
                 day: "",
             });
         } catch (err) {
-            if (err.response && err.response.data.errors) {
+            if (err.response?.data?.errors) {
                 setErrors(err.response.data.errors);
             } else {
                 console.error("Error creating class:", err);
@@ -101,7 +94,7 @@ export default function CreateClasses() {
                             <input
                                 type="text"
                                 name="name"
-                                placeholder="Class Name"
+                                placeholder="Course Title"
                                 value={formData.name}
                                 onChange={handleChange}
                                 className="border rounded-lg p-2 w-full"
@@ -113,7 +106,7 @@ export default function CreateClasses() {
                             <input
                                 type="text"
                                 name="subcode"
-                                placeholder="Subject Code"
+                                placeholder="Course Code"
                                 value={formData.subcode}
                                 onChange={handleChange}
                                 className="border rounded-lg p-2 w-full"
@@ -172,40 +165,6 @@ export default function CreateClasses() {
                             ))}
                         </select>
                         <InputError message={errors.instructor_id} />
-
-                        <select
-                            name="program"
-                            value={formData.program}
-                            onChange={handleChange}
-                            className="border rounded-lg p-2 w-full"
-                        >
-                            <option value="">Select Program</option>
-                            <option value="Bachelor of Science in Business Administration">
-                                BSBA
-                            </option>
-                            <option value="Bachelor of Science in Information Technology">
-                                BSIT
-                            </option>
-                            <option value="Bachelor of Science in Hospitality Management">
-                                BSHM
-                            </option>
-                            <option value="Bachelor of Science in Office Administration">
-                                BSOA
-                            </option>
-                            <option value="Bachelor of Elementary Education">
-                                BEEd
-                            </option>
-                            <option value="Bachelor of Secondary Education">
-                                BSEd
-                            </option>
-                            <option value="Bachelor of Technology and Livelihood Education">
-                                BTLEd
-                            </option>
-                            <option value="Bachelor of Science in Agriculture">
-                                BSA
-                            </option>
-                        </select>
-                        <InputError message={errors.program} />
                     </div>
 
                     {/* RIGHT SIDE - Less Important Fields */}
@@ -243,7 +202,7 @@ export default function CreateClasses() {
                                 <InputError message={errors.section} />
                             </div>
                         </div>
-                        <input
+                        {/* <input
                             type="file"
                             name="photo"
                             accept="image/*"
@@ -263,7 +222,7 @@ export default function CreateClasses() {
                                     No image selected
                                 </span>
                             )}
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Full width submit button */}

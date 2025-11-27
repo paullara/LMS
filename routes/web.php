@@ -6,6 +6,7 @@ use App\Http\Controllers\AssController;
 use App\Http\Controllers\AverageController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ChairmanController;
+use App\Http\Controllers\ClassController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\InstructorController;
@@ -122,8 +123,20 @@ Route::middleware(['auth', 'chairman'])->group(function () {
     Route::post('/chairman/create/class', [ChairmanController::class, 'storeClassroom']);
     Route::get('/chairman/classes', [ChairmanController::class, 'classes'])->name('chairman.created.classes');
     Route::get('/chairman/get/instructors', [ChairmanController::class, 'getInstructors']);
-    
 });
+
+// Chairman creates a draft
+Route::post('/chairman/classes/draft', [ClassController::class, 'chairmanCreateDraft'])
+    ->name('chairman.classes.draft');
+
+// Instructor fetches all drafts
+Route::get('/instructor/classes/drafts', [ClassController::class, 'instructorDrafts'])
+    ->name('instructor.classes.drafts');
+
+// Instructor completes a draft
+Route::post('/instructor/classes/drafts/complete', [ClassController::class, 'completeDraft'])
+    ->name('instructor.classes.complete');
+
 
 Route::get('/classroom/{id}/members', [InstructorController::class, 'getMembers']);
 Route::get('/student/{id}/grade', [AverageController::class, 'grade']);

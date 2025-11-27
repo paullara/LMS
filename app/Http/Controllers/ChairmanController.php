@@ -58,46 +58,44 @@ class ChairmanController extends Controller
         return Inertia::render('Chairman/Classes');
     }
 
-public function storeClassroom(Request $request)
-{
-    $authenticatedChairman = Auth::user();
+    public function storeClassroom(Request $request)
+    {
+        $authenticatedChairman = Auth::user();
 
-    $data = $request->validate([
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string|max:255',
-        'subcode' => 'required|string|max:255',
-        'start_time' => 'required|date_format:H:i',
-        'end_time' => 'required|date_format:H:i|after:start_time',
-        'instructor_id' => 'required|exists:users,id',
-        'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
-        'yearlevel' => 'required|integer',
-        'section' => 'required|string|max:20',
-        'program' => 'required|string',
-        'day' => 'required|string'
-    ]);
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:255',
+            'subcode' => 'required|string|max:255',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'instructor_id' => 'required|exists:users,id',
+            'yearlevel' => 'required|integer',
+            'section' => 'required|string|max:20',
+            'day' => 'required|string'
+        ]);
 
-    if ($request->hasFile('photo')) {
-        $file = $request->file('photo');
-        $filename = time() . '.' . $file->getClientOriginalExtension();
-        $file->move(public_path('class'), $filename);
-        $data['photo'] = $filename;
+        if ($request->hasFile('photo')) {
+            $file = $request->file('photo');
+            $filename = time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('class'), $filename);
+            $data['photo'] = $filename;
+        }
+
+        $data['chairman_id'] = $authenticatedChairman->id;
+        $data['code'] = Str::upper(Str::random(6));
+
+        $classroom = ClassModel::create($data);
+
+        $instructor = User::find($data['instructor_id']);
+        if ($instructor) {
+            $instructor->notify(new InstructorAssignedToClass($classroom, $authenticatedChairman));
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $classroom,
+            'message' => 'Class successfully created and instructor notified.',
+        ]);
     }
-
-    $data['chairman_id'] = $authenticatedChairman->id;
-    $data['code'] = Str::upper(Str::random(6));
-
-    $classroom = ClassModel::create($data);
-
-    $instructor = User::find($data['instructor_id']);
-    if ($instructor) {
-        $instructor->notify(new InstructorAssignedToClass($classroom, $authenticatedChairman));
-    }
-
-    return response()->json([
-        'success' => true,
-        'data' => $classroom,
-        'message' => 'Class successfully created and instructor notified.',
-    ]);
-}
 
 }

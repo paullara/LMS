@@ -91,10 +91,17 @@ export default function ClassListTest() {
                             </div>
                         </form>
 
-                        <Link
+                        {/* <Link
                             href={route("instructor.create")}
                             className="bg-blue-500 text-white border rounded-md p-4 w-80 flex justify-center items-center h-createclass
                             "
+                        >
+                            Create New
+                        </Link> */}
+                        <Link
+                            href={route("instructor.classes.drafts")}
+                            className="bg-blue-500 text-white border rounded-md p-4 w-80 flex justify-center items-center h-createclass
+                                                    "
                         >
                             Create New
                         </Link>

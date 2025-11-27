@@ -72,7 +72,9 @@ class InstructorController extends Controller
     {
         $classList = ClassModel::with('instructor')
             ->withCount('students')
-            ->where('instructor_id', auth()->id())->get();
+            ->where('instructor_id', auth()->id())
+            ->where('status', 'completed')
+            ->get();
 
         return response()->json([
             'classList' => $classList,

@@ -24,9 +24,10 @@ class ClassModel extends Model
         'start_time',
         'end_time',
         'code',
-        'program',
         'day',
-        'is_active'
+        'is_active',
+        'is_draft',
+        'status'
     ];
 
     public function instructor()
