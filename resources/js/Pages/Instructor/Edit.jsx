@@ -37,7 +37,7 @@ export default function Edit({ classModel }) {
         <InstructorLayout>
             <div className="bg-white shadow-md rounded-md p-5">
                 <div className="flex items-center gap-3 mb-5">
-                    <a href={route("instructor.classList")}>← Back</a>
+                    <a href={route("improved.classList")}>← Back</a>
                     <h1 className="text-2xl font-semibold">Edit Class</h1>
                 </div>
 
@@ -77,7 +77,7 @@ export default function Edit({ classModel }) {
                     </div>
 
                     <div>
-                        <InputLabel htmlFor="name" value="Class Name" />
+                        <InputLabel htmlFor="name" value="Course Title" />
                         <input
                             type="text"
                             id="name"
@@ -104,10 +104,7 @@ export default function Edit({ classModel }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <InputLabel
-                                htmlFor="subcode"
-                                value="Subject Code"
-                            />
+                            <InputLabel htmlFor="subcode" value="Course Code" />
                             <input
                                 id="subcode"
                                 type="text"

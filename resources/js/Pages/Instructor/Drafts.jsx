@@ -150,18 +150,18 @@ export default function Drafts({ drafts: initialDrafts, options }) {
                         onChange={(e) => setData("description", e.target.value)}
                     />
 
-                    <input
+                    {/* <input
                         type="file"
                         onChange={(e) => setData("photo", e.target.files[0])}
                         className="border rounded p-1 w-full"
-                    />
+                    /> */}
 
                     <button
                         type="submit"
                         disabled={processing || !data.id}
                         className="bg-blue-600 text-white px-4 py-2 rounded"
                     >
-                        Complete & Publish
+                        Complete
                     </button>
                 </form>
             )}
