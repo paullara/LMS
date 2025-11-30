@@ -207,13 +207,20 @@ export default function InstructorLayout({ header, children }) {
                             <div className="relative flex flex-row items-center">
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100">
-                                            <img
-                                                src={`/${user.profile_picture}`}
-                                                alt="Profile"
-                                                className="w-10 h-10 rounded-full object-cover"
-                                            />
-                                            <ChevronDown className="w-4 h-4 text-gray-600" />
+                                        <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md">
+                                            {user.profile_picture ? (
+                                                <img
+                                                    src={`/${user.profile_picture}`}
+                                                    alt="Profile"
+                                                    className="w-10 h-10 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-bluepsu flex items-center justify-center text-white font-semibold text-lg">
+                                                    {user.firstname
+                                                        .charAt(0)
+                                                        .toUpperCase()}
+                                                </div>
+                                            )}
                                         </button>
                                     </Dropdown.Trigger>
                                 </Dropdown>

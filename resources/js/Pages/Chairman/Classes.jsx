@@ -27,17 +27,17 @@ export default function Classes() {
 
     return (
         <Chairman>
-            <div className="p-8 max-w-7xl mx-auto">
+            <div className="p-4 max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-semibold text-gray-800">
-                        Created Classes
+                    {/* <h1 className="text-2xl font-semibold text-gray-800">
+                        Classroom Monitoring
                     </h1>
                     <Link
                         href={route("chairman.create.classes")}
                         className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
                     >
                         + Create New
-                    </Link>
+                    </Link> */}
                 </div>
 
                 {loading ? (
@@ -50,14 +50,12 @@ export default function Classes() {
                             <thead className="bg-gray-100 text-gray-700 uppercase text-sm">
                                 <tr>
                                     <th className="px-4 py-3 text-left">
-                                        Name
+                                        Course Title
                                     </th>
                                     <th className="px-4 py-3 text-left">
-                                        Code
+                                        Course Code
                                     </th>
-                                    <th className="px-4 py-3 text-left">
-                                        Program
-                                    </th>
+
                                     <th className="px-4 py-3 text-left">
                                         Schedule
                                     </th>
@@ -83,9 +81,6 @@ export default function Classes() {
                                         </td>
                                         <td className="px-4 py-3 text-gray-600">
                                             {cls.subcode}
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-600">
-                                            {cls.program}
                                         </td>
                                         <td className="px-4 py-3 text-gray-600">
                                             {cls.day} • {cls.start_time} -{" "}

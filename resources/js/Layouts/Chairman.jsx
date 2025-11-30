@@ -30,21 +30,29 @@ export default function Chairman({ header, children }) {
 
                 {/* Nav links (scrollable area) */}
                 <div className="flex-1 overflow-y-auto px-6">
-                    <Link
+                    {/* <Link
                         href={route("chairman.dashboard")}
                         className="flex items-center gap-2 mb-6"
                     >
                         <h1 className="text-black text-lg font-medium">
                             Dashboard
                         </h1>
-                    </Link>
+                    </Link> */}
 
                     <Link
                         href={route("chairman.created.classes")}
                         className="flex items-center gap-2"
                     >
                         <h1 className="text-profile text-lg font-medium">
-                            Classes
+                            Monitor Classes
+                        </h1>
+                    </Link>
+                    <Link
+                        href={route("chairman.create.classes")}
+                        className="flex items-center gap-2"
+                    >
+                        <h1 className="text-profile text-lg font-medium mt-6">
+                            Mananage Schedule
                         </h1>
                     </Link>
                 </div>
@@ -73,9 +81,14 @@ export default function Chairman({ header, children }) {
                 {/* Header */}
                 <div className="flex items-center justify-between bg-white ">
                     <div className="flex items-center p-6">
-                        {route().current("chairman.dashboard") && (
+                        {route().current("chairman.created.classes") && (
                             <h1 className="text-xl font-medium tracking-wide">
-                                Dashboard
+                                Classroom Monitoring
+                            </h1>
+                        )}
+                        {route().current("chairman.create.classes") && (
+                            <h1 className="text-xl font-medium tracking-wide">
+                                Create & Assign Schedule
                             </h1>
                         )}
                     </div>
@@ -98,12 +111,19 @@ export default function Chairman({ header, children }) {
                             <Dropdown>
                                 <Dropdown.Trigger>
                                     <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md">
-                                        <img
-                                            src={`/${user.profile_picture}`}
-                                            alt="Profile"
-                                            className="w-10 h-10 rounded-full object-cover"
-                                        />
-                                        {/* <span>{user.firstname}</span> */}
+                                        {user.profile_picture ? (
+                                            <img
+                                                src={`/${user.profile_picture}`}
+                                                alt="Profile"
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-bluepsu flex items-center justify-center text-white font-semibold text-lg">
+                                                {user.firstname
+                                                    .charAt(0)
+                                                    .toUpperCase()}
+                                            </div>
+                                        )}
                                     </button>
                                 </Dropdown.Trigger>
                             </Dropdown>

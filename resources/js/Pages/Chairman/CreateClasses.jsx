@@ -79,10 +79,6 @@ export default function CreateClasses() {
     return (
         <Chairman>
             <div className="p-8 max-w-5xl mx-auto bg-white rounded-2xl shadow-lg">
-                <h1 className="text-2xl font-semibold mb-6 text-gray-800">
-                    Create New Classroom
-                </h1>
-
                 <form
                     onSubmit={handleSubmit}
                     encType="multipart/form-data"

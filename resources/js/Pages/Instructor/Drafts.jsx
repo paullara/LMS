@@ -5,9 +5,8 @@ import { useState } from "react";
 export default function Drafts({ drafts: initialDrafts, options }) {
     const [successMessage, setSuccessMessage] = useState("");
 
-    // Form state for a single draft to complete
     const { data, setData, post, processing, errors, reset } = useForm({
-        id: "", // will hold selected draft ID
+        id: "", // selected draft
         name: "",
         subcode: "",
         day: "",
@@ -45,13 +44,29 @@ export default function Drafts({ drafts: initialDrafts, options }) {
         e.preventDefault();
         post(route("instructor.classes.complete"), {
             forceFormData: true,
-            onSuccess: (response) => {
-                setSuccessMessage(response.props.message || "Draft completed!");
-                reset(); // Clear the form
-            },
+            onSuccess: () => reset(),
             onError: () => setSuccessMessage(""),
         });
     };
+
+    const renderSelectInput = (field, fieldOptions, placeholder) => (
+        <div className="flex flex-col">
+            <label className="mb-1 font-medium">{placeholder}</label>
+            <select
+                value={data[field]}
+                onChange={(e) => setData(field, e.target.value)}
+                className="border rounded p-2 w-full"
+            >
+                <option value="">Select {placeholder}</option>
+                {fieldOptions.map((opt, idx) => (
+                    <option key={idx} value={opt}>
+                        {opt}
+                    </option>
+                ))}
+            </select>
+            {errors[field] && <p className="text-red-500">{errors[field]}</p>}
+        </div>
+    );
 
     return (
         <InstructorLayout>
@@ -89,27 +104,17 @@ export default function Drafts({ drafts: initialDrafts, options }) {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input
-                            type="text"
-                            placeholder="Course Name"
-                            value={data.name}
-                            onChange={(e) => setData("name", e.target.value)}
-                            className="border rounded p-2 w-full"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Course Code"
-                            value={data.subcode}
-                            onChange={(e) => setData("subcode", e.target.value)}
-                            className="border rounded p-2 w-full"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Day"
-                            value={data.day}
-                            onChange={(e) => setData("day", e.target.value)}
-                            className="border rounded p-2 w-full"
-                        />
+                        {renderSelectInput(
+                            "name",
+                            options.names,
+                            "Course Name"
+                        )}
+                        {renderSelectInput(
+                            "subcode",
+                            options.subcodes,
+                            "Course Code"
+                        )}
+                        {renderSelectInput("day", options.days, "Day")}
                         <input
                             type="time"
                             value={data.start_time}
@@ -126,22 +131,16 @@ export default function Drafts({ drafts: initialDrafts, options }) {
                             }
                             className="border rounded p-2 w-full"
                         />
-                        <input
-                            type="number"
-                            placeholder="Year Level"
-                            value={data.yearlevel}
-                            onChange={(e) =>
-                                setData("yearlevel", e.target.value)
-                            }
-                            className="border rounded p-2 w-full"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Section"
-                            value={data.section}
-                            onChange={(e) => setData("section", e.target.value)}
-                            className="border rounded p-2 w-full"
-                        />
+                        {renderSelectInput(
+                            "yearlevel",
+                            options.yearlevels,
+                            "Year Level"
+                        )}
+                        {renderSelectInput(
+                            "section",
+                            options.sections,
+                            "Section"
+                        )}
                     </div>
 
                     <textarea
@@ -156,12 +155,6 @@ export default function Drafts({ drafts: initialDrafts, options }) {
                         onChange={(e) => setData("photo", e.target.files[0])}
                         className="border rounded p-1 w-full"
                     />
-
-                    {successMessage && (
-                        <p className="text-green-500 font-medium">
-                            {successMessage}
-                        </p>
-                    )}
 
                     <button
                         type="submit"
