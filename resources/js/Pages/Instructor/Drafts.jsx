@@ -70,100 +70,98 @@ export default function Drafts({ drafts: initialDrafts, options }) {
 
     return (
         <InstructorLayout>
-            <h1 className="text-2xl font-semibold mb-4">
-                Complete Assigned Draft
-            </h1>
-
             {initialDrafts.length === 0 ? (
-                <p>No assigned draft classes yet.</p>
+                <div className="flex justify-center">
+                    <p>No assigned draft classes yet.</p>
+                </div>
             ) : (
-                <form
-                    onSubmit={submit}
-                    className="p-4 bg-white shadow rounded space-y-4"
-                >
-                    {/* Draft selection */}
-                    <div className="flex flex-col">
-                        <label className="mb-1 font-medium">
-                            Select Draft Class
-                        </label>
-                        <select
-                            value={data.id}
-                            onChange={handleDraftChange}
-                            className="border rounded p-2 w-full"
-                        >
-                            <option value="">Choose a class</option>
-                            {initialDrafts.map((draft) => (
-                                <option key={draft.id} value={draft.id}>
-                                    {draft.name}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.id && (
-                            <p className="text-red-500">{errors.id}</p>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {renderSelectInput(
-                            "name",
-                            options.names,
-                            "Course Name"
-                        )}
-                        {renderSelectInput(
-                            "subcode",
-                            options.subcodes,
-                            "Course Code"
-                        )}
-                        {renderSelectInput("day", options.days, "Day")}
-                        <input
-                            type="time"
-                            value={data.start_time}
-                            onChange={(e) =>
-                                setData("start_time", e.target.value)
-                            }
-                            className="border rounded p-2 w-full"
-                        />
-                        <input
-                            type="time"
-                            value={data.end_time}
-                            onChange={(e) =>
-                                setData("end_time", e.target.value)
-                            }
-                            className="border rounded p-2 w-full"
-                        />
-                        {renderSelectInput(
-                            "yearlevel",
-                            options.yearlevels,
-                            "Year Level"
-                        )}
-                        {renderSelectInput(
-                            "section",
-                            options.sections,
-                            "Section"
-                        )}
-                    </div>
-
-                    <textarea
-                        className="w-full border p-2 rounded"
-                        placeholder="Add class description"
-                        value={data.description}
-                        onChange={(e) => setData("description", e.target.value)}
-                    />
-
-                    {/* <input
-                        type="file"
-                        onChange={(e) => setData("photo", e.target.files[0])}
-                        className="border rounded p-1 w-full"
-                    /> */}
-
-                    <button
-                        type="submit"
-                        disabled={processing || !data.id}
-                        className="bg-blue-600 text-white px-4 py-2 rounded"
+                <div className="flex justify-center items-start mt-6">
+                    <form
+                        onSubmit={submit}
+                        className="p-4 bg-white shadow rounded space-y-4 w-full max-w-2xl"
                     >
-                        Complete
-                    </button>
-                </form>
+                        {/* Draft selection */}
+                        <div className="flex flex-col">
+                            <label className="mb-1 font-medium">
+                                Select Draft Class
+                            </label>
+                            <select
+                                value={data.id}
+                                onChange={handleDraftChange}
+                                className="border rounded p-2 w-full"
+                            >
+                                <option value="">Choose a class</option>
+                                {initialDrafts.map((draft) => (
+                                    <option key={draft.id} value={draft.id}>
+                                        {draft.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.id && (
+                                <p className="text-red-500">{errors.id}</p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {renderSelectInput(
+                                "name",
+                                options.names,
+                                "Course Name"
+                            )}
+                            {renderSelectInput(
+                                "subcode",
+                                options.subcodes,
+                                "Course Code"
+                            )}
+                            {renderSelectInput("day", options.days, "Day")}
+
+                            <input
+                                type="time"
+                                value={data.start_time}
+                                onChange={(e) =>
+                                    setData("start_time", e.target.value)
+                                }
+                                className="border rounded p-2 w-full"
+                            />
+                            <input
+                                type="time"
+                                value={data.end_time}
+                                onChange={(e) =>
+                                    setData("end_time", e.target.value)
+                                }
+                                className="border rounded p-2 w-full"
+                            />
+
+                            {renderSelectInput(
+                                "yearlevel",
+                                options.yearlevels,
+                                "Year Level"
+                            )}
+                            {renderSelectInput(
+                                "section",
+                                options.sections,
+                                "Section"
+                            )}
+                        </div>
+
+                        <textarea
+                            className="w-full border p-2 rounded"
+                            placeholder="Add class description"
+                            value={data.description}
+                            onChange={(e) =>
+                                setData("description", e.target.value)
+                            }
+                        />
+
+                        <button
+                            type="submit"
+                            disabled={processing || !data.id}
+                            className="bg-blue-600 text-white px-4 py-2 rounded"
+                        >
+                            Complete
+                        </button>
+                    </form>
+                </div>
             )}
         </InstructorLayout>
     );

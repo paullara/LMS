@@ -7,6 +7,8 @@ use App\Http\Controllers\AverageController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ChairmanController;
 use App\Http\Controllers\ClassController;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\InstructorController;
@@ -169,6 +171,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+    Route::get('/instructor/groups', [GroupController::class, 'index'])->name('instructor.groups.index');
+    Route::get('/instructor/groups/create', [GroupController::class, 'create'])->name('instructor.groups.create');
+    Route::post('/instructor/groups', [GroupController::class, 'store'])->name('instructor.groups.store');
+    Route::get('/instructor/groups/{group}', [GroupController::class, 'show'])->name('instructor.groups.show');
+    Route::post('/instructor/groups/{group}/messages', [MessageController::class, 'store'])->name('instructor.groups.messages.store');
+    Route::get('/instructor/groups/{group}/messages', [MessageController::class, 'fetch'])->name('instructor.groups.messages.fetch');
 });
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('redirect.google');

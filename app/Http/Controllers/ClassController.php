@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Notifications\InstructorAssignedToClass;
+// use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\ClassModel;
+use App\Models\User;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -11,6 +15,8 @@ class ClassController extends Controller
 {
     public function chairmanCreateDraft(Request $request)
     {
+        $authenticatedChairman = Auth::user();
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'subcode' => 'required|string|max:255',
@@ -29,6 +35,11 @@ class ClassController extends Controller
         $data['status'] = "assigned";
 
         $class = ClassModel::create($data);
+
+        $instructor = User::find($data['instructor_id']);
+        if ($instructor) {
+            $instructor->notify(new InstructorAssignedToClass($class, $authenticatedChairman));
+        }
 
         return response()->json([
             'success' => true,

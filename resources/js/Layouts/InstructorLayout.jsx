@@ -95,14 +95,14 @@ export default function InstructorLayout({ header, children }) {
                         </h1>
                     </Link>
 
-                    <Link
+                    {/* <Link
                         href={route("tasks.index")}
                         className="flex items-center gap-2 mb-6"
                     >
                         <h1 className="text-profile text-lg font-medium">
                             Task
                         </h1>
-                    </Link>
+                    </Link> */}
                     <Link
                         href={route("instructor.announcement")}
                         className="flex items-center gap-2 mb-6"
@@ -164,9 +164,22 @@ export default function InstructorLayout({ header, children }) {
                         {route().current("tasks.index") && (
                             <h1 className="text-xl font-medium">Manage Task</h1>
                         )}
+                        {route().current("instructor.classroom.edit") && (
+                            <h1 className="text-xl font-medium">
+                                Edit Classroom
+                            </h1>
+                        )}
                         {route().current("instructor.student.progress") && (
                             <h1 className="text-xl font-medium">
                                 Student Progress Overview
+                            </h1>
+                        )}
+                        {route().current("improved.classList") && (
+                            <h1 className="text-xl font-medium">My Classes</h1>
+                        )}
+                        {route().current("instructor.classes.drafts") && (
+                            <h1 className="text-xl font-medium">
+                                Complete Assigned Draft
                             </h1>
                         )}
                     </div>
@@ -198,27 +211,31 @@ export default function InstructorLayout({ header, children }) {
                             </button>
 
                             {/* Message Icon */}
-                            <button className="relative p-2 rounded-full hover:bg-gray-100">
-                                <MessageCircle className="w-5 h-5 text-gray-700" />
-                                <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
-                            </button>
-
+                            <Link href={route("instructor.groups.index")}>
+                                <button className="relative p-2 rounded-full hover:bg-gray-100">
+                                    <MessageCircle className="w-5 h-5 text-gray-700" />
+                                    <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
+                                </button>
+                            </Link>
                             {/* Profile + Dropdown */}
                             <div className="relative flex flex-row items-center">
                                 <Dropdown>
                                     <Dropdown.Trigger>
                                         <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md">
-                                            {user.profile_picture ? (
+                                            {auth?.user?.profile_picture ? (
                                                 <img
-                                                    src={`/${user.profile_picture}`}
+                                                    src={
+                                                        auth.user
+                                                            .profile_picture
+                                                    }
                                                     alt="Profile"
-                                                    className="w-10 h-10 rounded-full object-cover"
+                                                    className="w-8 h-8 rounded-full"
                                                 />
                                             ) : (
                                                 <div className="w-10 h-10 rounded-full bg-bluepsu flex items-center justify-center text-white font-semibold text-lg">
-                                                    {user.firstname
-                                                        .charAt(0)
-                                                        .toUpperCase()}
+                                                    {auth?.user?.firstname
+                                                        ?.charAt(0)
+                                                        .toUpperCase() ?? "U"}
                                                 </div>
                                             )}
                                         </button>

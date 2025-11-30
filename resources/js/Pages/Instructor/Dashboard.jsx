@@ -310,11 +310,22 @@ export default function Dashboard() {
                     <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg flex flex-col items-center p-6 transition-all duration-300">
                         {/* Profile Image */}
                         <div className="relative">
-                            <img
-                                src={`/${instructor?.profile_picture}`}
-                                alt="Instructor"
-                                className="w-24 h-24 rounded-full border-4 border-bluepsu object-cover shadow-md"
-                            />
+                            {instructor?.profile_picture ? (
+                                <img
+                                    src={`/${instructor.profile_picture}`}
+                                    alt="Instructor"
+                                    className="w-24 h-24 rounded-full border-4 border-bluepsu object-cover shadow-md"
+                                />
+                            ) : (
+                                <div className="w-24 h-24 rounded-full border-4 border-bluepsu bg-bluepsu/80 flex items-center justify-center shadow-md">
+                                    <span className="text-white text-3xl font-bold">
+                                        {instructor?.firstname
+                                            ?.charAt(0)
+                                            .toUpperCase()}
+                                    </span>
+                                </div>
+                            )}
+
                             <span className="absolute bottom-0 right-0 bg-bluepsu text-white text-xs px-2 py-0.5 rounded-full shadow">
                                 🎓 Instructor
                             </span>

@@ -80,7 +80,7 @@ export default function AuthenticatedLayout({ header, children }) {
                 </div>
 
                 {/* Main nav links */}
-                <div className="flex flex-col gap-2 flex-1 p-4 ">
+                <div className="flex flex-col gap-2 flex-1 p-6">
                     <Link
                         href={route("student.dashboard")}
                         className="flex items-center gap-2 mb-6"
@@ -99,14 +99,14 @@ export default function AuthenticatedLayout({ header, children }) {
                         </h1>
                     </Link>
 
-                    <Link
+                    {/* <Link
                         href={route("student.notifications")}
                         className="flex items-center gap-2 mb-6"
                     >
                         <h1 className="text-black text-lg font-medium">
                             Tasks
                         </h1>
-                    </Link>
+                    </Link> */}
 
                     {/* <NavLink
                         href={route("student.notifications")}
@@ -185,7 +185,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                                         >
                                             <p className="font-medium text-gray-800">
-                                                {inst.firstname}
+                                                {inst.firstname} {inst.lastname}
                                             </p>
                                         </li>
                                     ))}

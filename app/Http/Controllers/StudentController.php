@@ -226,7 +226,7 @@ class StudentController extends Controller
                 $q->where('firstname', 'like', "%{$query}%")
                   ->orWhere('email', 'like', "%{$query}%");
             })
-            ->select('id', 'firstname', 'email')
+            ->select('id', 'firstname', 'lastname', 'email')
             ->limit(10)
             ->get();
 
