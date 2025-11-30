@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Thread;
+use App\Models\Group;
 use App\Models\Task;
 use App\Models\Material;
 use App\Models\Assignment;
@@ -231,5 +232,28 @@ class StudentController extends Controller
             ->get();
 
         return response()->json($instructors);
+    }
+
+    public function groups()
+    {
+        $user = auth()->user();
+        $groups = $user->groups()->with(['instructor', 'students'])->get();
+        return Inertia::render('Group/Index', [
+            'groups' => $groups,
+        ]);
+    }
+
+    public function showGroup(Group $group)
+    {
+        $group->load(['instructor', 'students']);
+
+        // Load documents and transform them
+
+        $users = User::select('id', 'firstname', 'role')->get();
+
+        return Inertia::render('Group/Show', [
+            'group' => $group,
+            'users' => $users,
+        ]);
     }
 }

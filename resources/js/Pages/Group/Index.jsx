@@ -1,10 +1,10 @@
-import Instructor from "@/Layouts/InstructorLayout";
+import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { Link } from "@inertiajs/react";
 import { Users } from "lucide-react";
 
 export default function Index({ groups }) {
     return (
-        <Instructor>
+        <Authenticated>
             <div className="max-w-4xl mx-auto p-6">
                 <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
                     {groups.length === 0 ? (
@@ -18,7 +18,7 @@ export default function Index({ groups }) {
                                 <Link
                                     key={group.id}
                                     href={route(
-                                        "instructor.groups.show",
+                                        "student.groups.show",
                                         group.id
                                     )}
                                     className="
@@ -52,6 +52,6 @@ export default function Index({ groups }) {
                     )}
                 </div>
             </div>
-        </Instructor>
+        </Authenticated>
     );
 }

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Group;
 use App\Models\User;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class GroupController extends Controller
 {
@@ -41,20 +42,20 @@ class GroupController extends Controller
         return redirect()->route('instructor.groups.show', $group->id);
     }
 
-    public function show(Group $group)
-    {
-        return Inertia::render('Instructor/Groups/Show', [
-            'group' => $group->load([
-                'students:id,firstname',
-                'instructor:id,firstname',
-            ]),
-            'messages' => $group->messages()
-                ->with('user:id,firstname')
-                ->orderBy('created_at')
-                ->get(),
-            'auth' => auth()->user(),
-        ]);
-    }
+ public function show(Group $group)
+{
+    $messages = $group->messages()->with('user')->get();
+
+    // Students you want to be eligible for adding to the group
+    $students = User::where('role', 'student')->get();
+
+    return Inertia::render('Instructor/Groups/Show', [
+        'group' => $group->load('students'),
+        'messages' => $messages,
+        'users' => $students,   // <-- REQUIRED FIX
+        'auth' => auth()->user(),
+    ]);
+}
 
     public function assignStudents(Request $request, Group $group)
     {
@@ -66,4 +67,27 @@ class GroupController extends Controller
         
         return back()->with('success', 'Students added');
     }
+
+    public function searchStudents(Request $request, Group $group)
+{
+    $search = $request->query('q', '');
+
+    $existingStudentIds = $group->students()->pluck('id')->toArray();
+
+    $students = User::where('role', 'student')
+        ->whereNotIn('id', $existingStudentIds)
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('firstname', 'like', "%{$search}%")
+                  ->orWhere('lastname', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        })
+        ->limit(10)
+        ->get(['id', DB::raw("CONCAT(firstname, ' ', lastname) as name"), 'email']);
+
+    return response()->json($students);
+}
+
+
 }

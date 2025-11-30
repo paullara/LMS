@@ -50,13 +50,9 @@ export default function Dashboard({ classes }) {
                     <div className="overflow-hidden bg-white">
                         <div className="p-6 text-gray-900">
                             {/* Header row */}
-                            <div className="w-full flex flex-row justify-between items-center mb-6">
-                                <h3 className="text-2xl font-bold text-indigo-800">
-                                    Your Classes
-                                </h3>
-
+                            <div className="w-full flex flex-row justify-end items-end mb-6">
                                 {/* Join Class Input */}
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-end gap-2">
                                     <input
                                         type="text"
                                         value={code}

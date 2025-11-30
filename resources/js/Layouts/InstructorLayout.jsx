@@ -182,6 +182,12 @@ export default function InstructorLayout({ header, children }) {
                                 Complete Assigned Draft
                             </h1>
                         )}
+                        {route().current("instructor.groups.index") && (
+                            <h1 className="text-xl font-medium">My Groups</h1>
+                        )}
+                        {route().current("instructor.groups.show") && (
+                            <h1 className="text-xl font-medium">My Groups</h1>
+                        )}
                     </div>
                     <header className="bg-white h-16 px-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">

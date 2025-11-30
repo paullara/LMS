@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import Instructor from "@/Layouts/InstructorLayout";
+import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 
 // ensure cookies (Sanctum session) are sent when frontend is on a different origin
 axios.defaults.withCredentials = true;
 
-export default function Show({
-    group: initialGroup,
-    users: initialUsers = [],
-    auth,
-}) {
+export default function Show({ group: initialGroup, auth }) {
     console.log("Auth object:", auth);
     // --------------------------
     // GROUP + STUDENTS
@@ -82,120 +78,23 @@ export default function Show({
     // --------------------------
     // FILTER USERS BASED ON SEARCH
     // --------------------------
-    useEffect(() => {
-        if (!search.trim()) {
-            setFilteredUsers([]);
-            return;
-        }
-        const lowerSearch = search.toLowerCase();
-        const filtered = initialUsers
-            .filter((u) => !students.some((s) => s.id === u.id))
-            .filter(
-                (u) =>
-                    u.firstname.toLowerCase().includes(lowerSearch) ||
-                    u.lastname.toLowerCase().includes(lowerSearch) ||
-                    u.email.toLowerCase().includes(lowerSearch)
-            );
-        setFilteredUsers(filtered);
-    }, [search, initialUsers, students]);
 
     // --------------------------
     // ADD STUDENT TO GROUP
     // --------------------------
-    const addStudent = async (userId) => {
-        try {
-            await axios.post(
-                route("instructor.groups.addStudent", { group: group.id }),
-                {
-                    student_ids: [userId],
-                }
-            );
-            const addedUser = initialUsers.find((u) => u.id === userId);
-            setStudents((prev) => [...prev, addedUser]);
-            setFilteredUsers((prev) => prev.filter((u) => u.id !== userId));
-            setSearch("");
-        } catch (err) {
-            console.error("Error adding student:", err);
-        }
-    };
+
     return (
-        <Instructor>
-            <div className="flex h-[calc(100vh-2rem)] max-w-6xl mx-auto gap-4 p-4">
+        <Authenticated>
+            <div className="flex h-[calc(100vh-2rem)] max-w-6xl mx-auto p-4 justify-center items-center">
                 {/* Left Panel - Search + Students */}
-                <div className="w-1/3 bg-white rounded shadow p-4 flex flex-col">
-                    <h2 className="text-lg font-semibold mb-3 text-blue-700">
-                        Students
-                    </h2>
-
-                    <input
-                        type="text"
-                        placeholder="Search students..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="border p-2 rounded mb-3 focus:border-blue-700 focus:ring-1 focus:ring-blue-300"
-                    />
-
-                    <div className="flex-1 overflow-auto">
-                        {/* Filtered Users */}
-                        {search && filteredUsers.length === 0 && (
-                            <p className="text-gray-400">No students found.</p>
-                        )}
-                        {filteredUsers.map((u) => (
-                            <div
-                                key={u.id}
-                                className="p-2 border-b last:border-none flex items-center justify-between hover:bg-yellow-100 cursor-pointer rounded"
-                            >
-                                <div className="flex items-center">
-                                    <div className="w-10 h-10 rounded-full bg-blue-200 text-blue-700 flex items-center justify-center font-bold mr-3">
-                                        {u.firstname?.charAt(0).toUpperCase()}
-                                    </div>
-                                    <span>
-                                        {u.firstname} {u.lastname}
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={() => addStudent(u.id)}
-                                    className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-800"
-                                >
-                                    Add
-                                </button>
-                            </div>
-                        ))}
-
-                        {/* Students in Group */}
-                        <div className="mt-4">
-                            <h3 className="text-md font-semibold mb-2 text-blue-700">
-                                In Group
-                            </h3>
-                            {students.length === 0 ? (
-                                <p className="text-gray-400 text-center py-4">
-                                    No students in this group yet.
-                                </p>
-                            ) : (
-                                students.map((student) => (
-                                    <div
-                                        key={student.id}
-                                        className="flex items-center p-2 border-b last:border-none"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-yellow-300 text-yellow-800 flex items-center justify-center font-medium mr-3">
-                                            {student.firstname?.charAt(0)}
-                                        </div>
-                                        <span>
-                                            {student.firstname}{" "}
-                                            {student.lastname}
-                                        </span>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </div>
 
                 {/* Right Panel - Messages */}
                 <div className="w-2/3 bg-white rounded shadow flex flex-col p-4">
-                    <h2 className="text-lg font-semibold mb-3 text-blue-700">
-                        Group Messages
-                    </h2>
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b">
+                        <h2 className="text-xl font-bold text-blue-700">
+                            {group?.name}
+                        </h2>
+                    </div>
 
                     <div className="flex-1 border rounded p-3 overflow-auto mb-3 flex flex-col">
                         {messages.length === 0 ? (
@@ -204,7 +103,9 @@ export default function Show({
                             </p>
                         ) : (
                             messages.map((m) => {
-                                const isOwn = m.user_id === auth?.id;
+                                // const isOwn = m.user_id === auth?.id;
+                                const isOwn = m.user_id === auth?.user?.id;
+
                                 console.log(
                                     "Message ID:",
                                     m.id,
@@ -285,6 +186,6 @@ export default function Show({
                     </div>
                 </div>
             </div>
-        </Instructor>
+        </Authenticated>
     );
 }

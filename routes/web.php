@@ -175,8 +175,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/instructor/groups/create', [GroupController::class, 'create'])->name('instructor.groups.create');
     Route::post('/instructor/groups', [GroupController::class, 'store'])->name('instructor.groups.store');
     Route::get('/instructor/groups/{group}', [GroupController::class, 'show'])->name('instructor.groups.show');
-    Route::post('/instructor/groups/{group}/messages', [MessageController::class, 'store'])->name('instructor.groups.messages.store');
-    Route::get('/instructor/groups/{group}/messages', [MessageController::class, 'fetch'])->name('instructor.groups.messages.fetch');
+    Route::get('/groups/{group}/messages', [MessageController::class, 'index'])->name('groups.messages.index');
+    Route::post('/groups/{group}/messages', [MessageController::class, 'store'])->name('groups.messages.store');
+    Route::get('/groups/{group}/students/search', [GroupController::class, 'searchStudents'])->name('instructor.groups.students.search');
+    Route::post('/instructor/groups/{group}/add-student', [GroupController::class, 'assignStudents'])->name('instructor.groups.addStudent');
+    Route::get('/student/groups', [StudentController::class, 'groups'])->name('student.groups');
+    Route::get('/student/groups/{group}', [StudentController::class, 'showGroup'])->name('student.groups.show');
 });
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('redirect.google');

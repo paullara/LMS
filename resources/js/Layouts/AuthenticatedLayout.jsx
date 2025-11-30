@@ -7,7 +7,8 @@ import { Menu, ChevronDown, Bell, MessageCircle, Search } from "lucide-react";
 import axios from "axios";
 
 export default function AuthenticatedLayout({ header, children }) {
-    const user = usePage().props.auth.user;
+    // const user = usePage().props.auth.user;
+    const { auth } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [results, setResults] = useState([]);
@@ -155,6 +156,21 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Dashboard
                                 </h1>
                             )}
+                            {route().current("student.groups") && (
+                                <h1 className="text-xl font-medium tracking-wide">
+                                    My Group
+                                </h1>
+                            )}
+                            {route().current("student.groups.show") && (
+                                <h1 className="text-xl font-medium tracking-wide">
+                                    My Group
+                                </h1>
+                            )}
+                            {route().current("classroom") && (
+                                <h1 className="text-xl font-medium tracking-wide">
+                                    My Class
+                                </h1>
+                            )}
                         </div>
                     </div>
 
@@ -202,22 +218,34 @@ export default function AuthenticatedLayout({ header, children }) {
                             </button>
 
                             {/* Message Icon */}
-                            <button className="relative p-2 rounded-full hover:bg-gray-100">
-                                <MessageCircle className="w-5 h-5 text-gray-700" />
-                                <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
-                            </button>
+                            <Link href={route("student.groups")}>
+                                <button className="relative p-2 rounded-full hover:bg-gray-100">
+                                    <MessageCircle className="w-5 h-5 text-gray-700" />
+                                    <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
+                                </button>
+                            </Link>
 
                             {/* Profile + Dropdown */}
                             <div className="relative flex flex-row items-center">
                                 <Dropdown>
                                     <Dropdown.Trigger>
-                                        <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100">
-                                            <img
-                                                src={`/${user.profile_picture}`}
-                                                alt="Profile"
-                                                className="w-10 h-10 rounded-full object-cover"
-                                            />
-                                            <ChevronDown className="w-4 h-4 text-gray-600" />
+                                        <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md">
+                                            {auth?.user?.profile_picture ? (
+                                                <img
+                                                    src={
+                                                        auth.user
+                                                            .profile_picture
+                                                    }
+                                                    alt="Profile"
+                                                    className="w-8 h-8 rounded-full"
+                                                />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-bluepsu flex items-center justify-center text-white font-semibold text-lg">
+                                                    {auth?.user?.firstname
+                                                        ?.charAt(0)
+                                                        .toUpperCase() ?? "U"}
+                                                </div>
+                                            )}
                                         </button>
                                     </Dropdown.Trigger>
                                 </Dropdown>
