@@ -181,6 +181,11 @@ export default function AuthenticatedLayout({ header, children }) {
                                     My Class
                                 </h1>
                             )}
+                            {route().current("student.test.profile") && (
+                                <h1 className="text-xl font-medium tracking-wide">
+                                    Profile
+                                </h1>
+                            )}
                         </div>
                     </div>
 

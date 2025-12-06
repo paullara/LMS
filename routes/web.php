@@ -199,7 +199,6 @@ Route::post('/video-call/{id}/leave', [VideoCallController::class, 'leave']);
 
 // Anuthorized route
 
-
 // refactor ver
 Route::post('/class/materials/{classrom}', [ClassMaterialController::class, 'store']);
 Route::get('/classroom/material/fetch/{id}', [ClassMaterialController::class, 'fetchMaterials']);

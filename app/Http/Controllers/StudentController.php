@@ -260,15 +260,48 @@ class StudentController extends Controller
     public function testProfile()
     {
         $student = Auth::user();
+        $classes = $student->enrolledClasses()->with('instructor')->get();
+        $classIds = $student->enrolledClasses()->pluck('classes.id');
 
         if ($student->role !== "student") {
             abort (403, 'Unauthorized');
         }
 
-        $classes = $student->enrolledClasses()->with('instructor')->get();
+        // upcoming
+        $assignmentItems = Assignment::whereIn('class_id', $classIds)
+            ->where('due_date', '>', now())
+            ->orderBy('due_date', 'asc')
+            ->get()
+            ->map(function($a) {
+                return [
+                    'type' => 'assignment',
+                    'title' => $a->title,
+                    'deadline' => $a->due_date,
+                    'class_id' => $a->class_id,
+                ];
+            });
+        
+        $quizItems = Quiz::whereIn('class_id', $classIds)
+            ->where('end_time', '>', now())
+            ->orderBy('end_time', 'asc')
+            ->get()
+            ->map(function ($q) {
+                return [
+                    'type' => 'quiz',
+                    'title' => $q->title,
+                    'deadline' => $q->end_time,
+                    'class_id' => $q->class_id,
+                ];
+            });
+
+        $upcoming = $assignmentItems
+            ->merge($quizItems)
+            ->sortBy('deadline')
+            ->values();
 
         return Inertia::render('TestProfile', [
-            'classes' => $classes
+            'classes' => $classes,
+            'upcoming' => $upcoming,
         ]);
     }
 }

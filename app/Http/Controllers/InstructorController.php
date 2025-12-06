@@ -433,7 +433,7 @@ class InstructorController extends Controller
         $student = User::where('firstname', 'like', '%' . $request->input('query') . '%')
             ->where('id', '!=', auth()->id())
             ->limit(10)
-            ->get(['id', 'firstname']);
+            ->get(['id', 'firstname', 'lastname']);
 
         return response()->json($student);
     }
