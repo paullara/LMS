@@ -230,10 +230,7 @@ export default function InstructorLayout({ header, children }) {
                                         <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md">
                                             {auth?.user?.profile_picture ? (
                                                 <img
-                                                    src={
-                                                        auth.user
-                                                            .profile_picture
-                                                    }
+                                                    src={`/${auth.user.profile_picture}`}
                                                     alt="Profile"
                                                     className="w-8 h-8 rounded-full"
                                                 />
