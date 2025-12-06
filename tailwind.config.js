@@ -34,6 +34,15 @@ export default {
                 top: "85px",
                 welcomehero: "700px",
                 anauthorized: "300px",
+                profile: "750px",
+                left: "600px",
+                profile_info: "210px",
+                phone: "17px",
+                email: "17px",
+                house: "18px",
+                building: "18px",
+                pin: "18px",
+                book: "18px",
             },
             width: {
                 container: "300px",
@@ -44,6 +53,7 @@ export default {
                 table: "10px",
                 sidebar: "209px",
                 header: "500px",
+                profile: "700px",
             },
             fontSize: {
                 xs: "12px",

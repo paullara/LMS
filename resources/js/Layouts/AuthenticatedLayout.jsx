@@ -15,6 +15,8 @@ export default function AuthenticatedLayout({ header, children }) {
     const [showResults, setShowResults] = useState(false);
     const resultsRef = useRef(null);
 
+    console.log("Authenticated User:", auth?.user?.id);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (
@@ -100,6 +102,15 @@ export default function AuthenticatedLayout({ header, children }) {
                         </h1>
                     </Link>
 
+                    <Link
+                        href={route("student.test.profile")}
+                        className="flex items-center gap-2 mb-6"
+                    >
+                        <h1 className="text-black text-lg font-medium">
+                            Profile
+                        </h1>
+                    </Link>
+
                     {/* <Link
                         href={route("student.notifications")}
                         className="flex items-center gap-2 mb-6"
@@ -142,7 +153,6 @@ export default function AuthenticatedLayout({ header, children }) {
             <div className="sm:ml-48">
                 <header className="fixed top-0 right-0 left-0 sm:left-48 h-16 bg-white px-4 sm:px-6 lg:px-8 gap-4 shadow-sm flex items-center justify-between z-20">
                     <div className="flex items-center gap-3">
-                        {/* Mobile menu button */}
                         <button
                             className="sm:hidden p-2 rounded-md hover:bg-gray-100"
                             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -174,9 +184,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
                     </div>
 
-                    {/* Right group: search (narrower) placed next to icons */}
                     <div className="flex items-center justify-between gap-3 w-1/2">
-                        {/* Search Input (reduced width to sit closer to icons) */}
                         <div
                             className="flex items-center gap-2 relative flex-1"
                             ref={resultsRef}
@@ -209,15 +217,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             )}
                         </div>
 
-                        {/* Notification, message, profile */}
                         <div className="relative flex flex-row items-center gap-4">
-                            {/* Notification Icon */}
                             <button className="relative p-2 rounded-full hover:bg-gray-100">
                                 <Bell className="w-5 h-5 text-gray-700" />
                                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                             </button>
 
-                            {/* Message Icon */}
                             <Link href={route("student.groups")}>
                                 <button className="relative p-2 rounded-full hover:bg-gray-100">
                                     <MessageCircle className="w-5 h-5 text-gray-700" />
@@ -225,17 +230,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </button>
                             </Link>
 
-                            {/* Profile + Dropdown */}
                             <div className="relative flex flex-row items-center">
                                 <Dropdown>
                                     <Dropdown.Trigger>
                                         <button className="inline-flex items-center gap-2 px-3 py-2 rounded-md">
                                             {auth?.user?.profile_picture ? (
                                                 <img
-                                                    src={
-                                                        auth.user
-                                                            .profile_picture
-                                                    }
+                                                    src={`/${auth.user.profile_picture}`}
                                                     alt="Profile"
                                                     className="w-8 h-8 rounded-full"
                                                 />

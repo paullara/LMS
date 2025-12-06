@@ -181,6 +181,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/instructor/groups/{group}/add-student', [GroupController::class, 'assignStudents'])->name('instructor.groups.addStudent');
     Route::get('/student/groups', [StudentController::class, 'groups'])->name('student.groups');
     Route::get('/student/groups/{group}', [StudentController::class, 'showGroup'])->name('student.groups.show');
+    Route::get('/student/test/profile', [StudentController::class, 'testProfile'])->name('student.test.profile');
 });
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('redirect.google');

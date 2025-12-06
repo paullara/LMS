@@ -256,4 +256,19 @@ class StudentController extends Controller
             'users' => $users,
         ]);
     }
+
+    public function testProfile()
+    {
+        $student = Auth::user();
+
+        if ($student->role !== "student") {
+            abort (403, 'Unauthorized');
+        }
+
+        $classes = $student->enrolledClasses()->with('instructor')->get();
+
+        return Inertia::render('TestProfile', [
+            'classes' => $classes
+        ]);
+    }
 }
