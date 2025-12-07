@@ -354,10 +354,14 @@ class InstructorController extends Controller
 
     public function editProfile()
     {
-        $user = Auth::user();
+        $createdClasses = ClassModel::with(['instructor', 'students'])
+            ->withCount('students')
+            ->where('instructor_id', auth()->id())
+            ->where('status', 'completed')
+            ->get();
 
         return inertia('Instructor/Profile', [
-            'user' => $user,
+            'createdClasses' => $createdClasses,
         ]);
     }
 

@@ -16,11 +16,17 @@ import {
 
 export default function VideoCall({ videoCall }) {
     const { auth } = usePage().props;
-    const myVideoRef = useRef(null);
+    const mainVideoRef = useRef(null);
     const peerInstance = useRef(null);
     const streamRef = useRef(null);
+    const prevStreamRef = useRef(null);
     const calledPeers = useRef(new Set());
     const activeCallsRef = useRef(new Map());
+    const hostPeerIdRef = useRef(null);
+    const pendingStreamsRef = useRef(new Map());
+
+    // map of participantPeerId (or fallback id) => DOM video element
+    const participantsVideoRefs = useRef(new Map());
 
     const [peerId, setPeerId] = useState(null);
     const [sharing, setSharing] = useState(false);
@@ -38,23 +44,122 @@ export default function VideoCall({ videoCall }) {
 
     const currentUser = auth.user;
 
+    // helper: register participant video element
+    const setParticipantVideoRef = (key, el) => {
+        if (!key) return;
+
+        const keyStr = key.toString();
+
+        if (el) {
+            participantsVideoRefs.current.set(keyStr, el);
+
+            // We're only going to attach a stream to the participant CARD when:
+            // - there's a stream to attach, AND
+            // - it's the local user's card
+            if (keyStr === (peerId || String(currentUser.id))) {
+                // If host is currently sharing (display stream in streamRef), don't attach that display stream
+                if (sharing && currentUser.id === videoCall.host_id) {
+                    // attach previous camera/mic stream if we have one, otherwise leave the card empty
+                    if (prevStreamRef.current) {
+                        try {
+                            el.srcObject = prevStreamRef.current;
+                        } catch (e) {
+                            console.warn(
+                                "Failed to set prev stream on participant element",
+                                e
+                            );
+                        }
+                    } else {
+                        // intentionally leave host card empty while sharing
+                        try {
+                            el.srcObject = null;
+                        } catch (_) {}
+                    }
+                } else {
+                    // Normal case: attach whatever current local stream is (camera/mic)
+                    if (streamRef.current) {
+                        try {
+                            el.srcObject = streamRef.current;
+                        } catch (e) {
+                            console.warn(
+                                "Failed to set local stream on participant element",
+                                e
+                            );
+                        }
+                    }
+                }
+            }
+        } else {
+            participantsVideoRefs.current.delete(keyStr);
+        }
+
+        // if there is a pending remote stream for this peer, attach it now
+        const pending = pendingStreamsRef.current.get(keyStr);
+        if (pending) {
+            try {
+                el.srcObject = pending;
+            } catch (e) {
+                console.warn(
+                    "Failed to attach pending stream to participant element",
+                    e
+                );
+            }
+            pendingStreamsRef.current.delete(keyStr);
+            // no further local stream attach necessary in this case
+            return;
+        }
+    };
+
     // --- Initialize PeerJS ---
     useEffect(() => {
         const myPeer = new Peer();
 
         myPeer.on("open", (id) => setPeerId(id));
+
         myPeer.on("call", (call) => {
-            call.answer();
+            // answer without sending a stream by default (the callee may or may not send)
+            try {
+                call.answer();
+            } catch (err) {
+                console.warn("Error answering call:", err);
+            }
 
             call.on("stream", (remoteStream) => {
-                if (myVideoRef.current) {
-                    myVideoRef.current.srcObject = remoteStream;
+                const callerIsHost = call.peer === hostPeerIdRef.current;
+                if (callerIsHost && mainVideoRef.current) {
+                    // Host's stream (camera or screen-share) => main video
+                    mainVideoRef.current.srcObject = remoteStream;
+                    return;
+                }
+
+                // Non-host: attach only to participant-card element
+                // If the participant element isn't mounted yet, buffer the stream.
+                const el = participantsVideoRefs.current.get(call.peer);
+                if (el) {
+                    el.srcObject = remoteStream;
+                } else {
+                    // buffer the stream until the participant card mounts
+                    pendingStreamsRef.current.set(call.peer, remoteStream);
                 }
             });
 
             call.on("close", () => {
-                if (myVideoRef.current) {
-                    myVideoRef.current.srcObject = null;
+                const callerIsHost = call.peer === hostPeerIdRef.current;
+                if (callerIsHost && mainVideoRef.current) {
+                    try {
+                        mainVideoRef.current.srcObject = null;
+                    } catch (e) {}
+                    return;
+                }
+
+                const el = participantsVideoRefs.current.get(call.peer);
+                if (el) {
+                    try {
+                        el.srcObject = null;
+                    } catch (e) {}
+                } else {
+                    // If we previously buffered a stream, remove it
+                    pendingStreamsRef.current.delete(call.peer);
                 }
             });
 
@@ -101,6 +206,30 @@ export default function VideoCall({ videoCall }) {
                 ?.getTracks()
                 .filter((t) => t.kind === "video")
                 .forEach((t) => t.stop());
+
+            // clear participant element for local user (if exists)
+            const userKey = peerId || String(currentUser.id);
+            const el = participantsVideoRefs.current.get(userKey);
+            if (el) {
+                try {
+                    el.srcObject = null;
+                } catch (e) {
+                    console.warn("Error clearing local participant video:", e);
+                }
+            }
+
+            // only clear main video for host or if screen sharing ended
+            if (
+                currentUser.id === videoCall.host_id &&
+                mainVideoRef.current &&
+                !sharing
+            ) {
+                try {
+                    mainVideoRef.current.srcObject = null;
+                } catch (e) {}
+            }
+
+            streamRef.current = null;
             setCameraOn(false);
             return;
         }
@@ -111,7 +240,17 @@ export default function VideoCall({ videoCall }) {
                 audio: micOn,
             });
             streamRef.current = stream;
-            myVideoRef.current.srcObject = stream;
+
+            // Show in participant card for current user (if mounted)
+            const userKey = peerId || String(currentUser.id);
+            const el = participantsVideoRefs.current.get(userKey);
+            if (el) el.srcObject = stream;
+
+            // Only set main video if the local user is the host (we don't want participants to replace main)
+            if (currentUser.id === videoCall.host_id && mainVideoRef.current) {
+                mainVideoRef.current.srcObject = stream;
+            }
+
             setCameraOn(true);
         } catch (err) {
             console.error("Camera error:", err);
@@ -124,7 +263,16 @@ export default function VideoCall({ videoCall }) {
                 audio: true,
             });
             streamRef.current = stream;
-            myVideoRef.current.srcObject = stream;
+
+            // attach mic to participant card if exists (local user)
+            const userKey = peerId || String(currentUser.id);
+            const el = participantsVideoRefs.current.get(userKey);
+            if (el) el.srcObject = stream;
+
+            // Only attach main video to stream if host (avoid replacing main for participants)
+            if (currentUser.id === videoCall.host_id && mainVideoRef.current) {
+                mainVideoRef.current.srcObject = stream;
+            }
         }
 
         if (streamRef.current) {
@@ -143,9 +291,27 @@ export default function VideoCall({ videoCall }) {
                 audio: true,
             });
 
-            myVideoRef.current.srcObject = stream;
+            // Save any existing local stream (camera/mic) so we can restore it after sharing
+            prevStreamRef.current = streamRef.current;
+
+            // Use the display stream as the active stream
             streamRef.current = stream;
+            if (mainVideoRef.current) mainVideoRef.current.srcObject = stream;
             setSharing(true);
+
+            // Ensure host's participant card does NOT show the shared screen:
+            const userKey = peerId || String(currentUser.id);
+            const hostEl = participantsVideoRefs.current.get(userKey);
+            if (hostEl) {
+                try {
+                    hostEl.srcObject = null;
+                } catch (e) {
+                    console.warn(
+                        "Error clearing host participant card for screen share:",
+                        e
+                    );
+                }
+            }
 
             stream.getTracks().forEach((track) => {
                 track.onended = () => stopSharing();
@@ -182,9 +348,18 @@ export default function VideoCall({ videoCall }) {
         if (streamRef.current) {
             streamRef.current.getTracks().forEach((track) => track.stop());
         }
-        streamRef.current = null;
-        myVideoRef.current.srcObject = null;
 
+        // Clear the display stream
+        const currentStream = streamRef.current;
+        streamRef.current = null;
+
+        if (mainVideoRef.current && currentStream) {
+            try {
+                mainVideoRef.current.srcObject = null;
+            } catch (e) {}
+        }
+
+        // Close any active calls from the host's broadcast
         activeCallsRef.current.forEach((call) => {
             try {
                 call.close();
@@ -195,6 +370,34 @@ export default function VideoCall({ videoCall }) {
         activeCallsRef.current.clear();
         calledPeers.current.clear();
         setSharing(false);
+
+        // Restore the previous (camera/mic) stream if we saved one
+        if (prevStreamRef.current) {
+            streamRef.current = prevStreamRef.current;
+            const userKey = peerId || String(currentUser.id);
+            const hostEl = participantsVideoRefs.current.get(userKey);
+            if (hostEl) {
+                try {
+                    hostEl.srcObject = streamRef.current;
+                } catch (e) {
+                    console.warn(
+                        "Error restoring host participant video after screen share:",
+                        e
+                    );
+                }
+            }
+            // restore main view to camera if host previously had camera on
+            if (
+                currentUser.id === videoCall.host_id &&
+                mainVideoRef.current &&
+                streamRef.current
+            ) {
+                try {
+                    mainVideoRef.current.srcObject = streamRef.current;
+                } catch (e) {}
+            }
+            prevStreamRef.current = null;
+        }
     };
 
     const handleEndCall = async () => {
@@ -329,6 +532,11 @@ export default function VideoCall({ videoCall }) {
         return () => window.removeEventListener("keydown", handleEsc);
     }, []);
 
+    useEffect(() => {
+        const host = participants.find((p) => p.user.id === videoCall.host_id);
+        hostPeerIdRef.current = host?.peer_id || null;
+    }, [participants, videoCall.host_id]);
+
     return (
         <div className="h-screen flex flex-col bg-[#0f1117] text-white">
             {/* Header */}
@@ -357,22 +565,28 @@ export default function VideoCall({ videoCall }) {
                             </button>
                         </div>
                         <div className="grid grid-cols-1 gap-4">
-                            {participants.map((p) => (
-                                <div
-                                    key={p.id}
-                                    className="relative bg-[#11131b] border border-gray-700 rounded-xl p-3 flex flex-col items-center justify-center shadow-md"
-                                >
-                                    {p.user.id === currentUser.id &&
-                                    cameraOn ? (
+                            {participants.map((p) => {
+                                // choose stable key for ref lookup: prefer peer_id, fallback to user id
+                                const refKey = p.peer_id || String(p.user.id);
+                                return (
+                                    <div
+                                        key={p.id}
+                                        className="relative bg-[#11131b] border border-gray-700 rounded-xl p-3 flex flex-col items-center justify-center shadow-md"
+                                    >
                                         <video
-                                            ref={myVideoRef}
+                                            ref={(el) =>
+                                                setParticipantVideoRef(
+                                                    refKey,
+                                                    el
+                                                )
+                                            }
                                             autoPlay
                                             playsInline
-                                            muted
-                                            className="rounded-lg w-full h-32 object-cover"
+                                            muted={p.user.id === currentUser.id}
+                                            className="rounded-lg w-full h-32 object-cover bg-black"
                                         />
-                                    ) : (
-                                        <div className="w-full h-32 bg-[#11131b] rounded-lg flex flex-col items-center justify-center text-gray-400">
+                                        {/* Fallback avatar + name overlay (will show even if video blank) */}
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                             <img
                                                 src={`/${p.user.profile_picture}`}
                                                 className="w-12 h-12 rounded-full border border-gray-600 mb-1"
@@ -384,9 +598,9 @@ export default function VideoCall({ videoCall }) {
                                                     " (You)"}
                                             </span>
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </aside>
                 )}
@@ -394,7 +608,7 @@ export default function VideoCall({ videoCall }) {
                 {/* Main Video */}
                 <main className="flex-1 flex flex-col items-center justify-center relative">
                     <video
-                        ref={myVideoRef}
+                        ref={mainVideoRef}
                         autoPlay
                         playsInline
                         muted

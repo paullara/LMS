@@ -1,4 +1,4 @@
-import Instructor from "@/Layouts/InstructorLayout";
+import Chairman from "@/Layouts/Chairman";
 import { usePage } from "@inertiajs/react";
 import { useState, useEffect } from "react";
 import Avatar from "@/Components/Profile/Avatar";
@@ -21,7 +21,7 @@ export default function Profile({ createdClasses }) {
     }, [createdClasses]);
 
     return (
-        <Instructor>
+        <Chairman>
             <div className="p-4 ml-4 flex gap-4">
                 {/* LEFT SIDE */}
                 <div className="w-2/5 flex flex-col gap-4">
@@ -74,6 +74,6 @@ export default function Profile({ createdClasses }) {
                     )}
                 </div>
             </div>
-        </Instructor>
+        </Chairman>
     );
 }

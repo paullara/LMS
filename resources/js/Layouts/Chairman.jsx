@@ -60,7 +60,7 @@ export default function Chairman({ header, children }) {
                 {/* Sticky Profile + Logout (sticks to sidebar bottom) */}
                 <div className="sticky bottom-0 bg-gray-50 border-t p-4">
                     <NavLink
-                        href={route("instructor.profile")}
+                        href={route("chairman.profile")}
                         className="w-full px-3 py-2 rounded-md text-sm font-medium text-lg"
                     >
                         <h1 className="text-lg">Profile</h1>

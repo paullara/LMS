@@ -338,7 +338,7 @@ export default function Welcome({ auth }) {
                     {/* Main Content */}
                     <motion.h1
                         id="hero-title"
-                        className="relative z-10 text-7xl font-semibold text-gray-800 mt-14 flex flex-wrap justify-center"
+                        className="relative z-10 text-7xl font-semibold text-gray-800 mt-40 flex flex-wrap justify-center"
                         variants={container}
                         initial="hidden"
                         animate="visible"
@@ -629,13 +629,15 @@ export default function Welcome({ auth }) {
                 </section>
                 <section className="w-full h-[350px] flex items-center justify-evenly bg-white shadow-md gap-11">
                     <div className="w-2/5 h-full flex flex-col justify-center px-10 gap-4">
-                        <div className="flex flex-row items-center w-full">
-                            <h1 className="text-2xl font-semibold">E D U</h1>
+                        <div className="w-3/6 flex items-center gap-2">
                             <img
-                                src="logo/paul.png"
+                                src="logo/psu.png"
                                 alt=""
-                                className="h-12 w-14"
+                                className="h-15 w-12"
                             />
+                            <h1 className="text-bluepsu text-2xl tracking-wide font-md">
+                                <span className="text-gold">PSU</span>Learn
+                            </h1>
                         </div>
                         <p className="tracking-wide">
                             A collaborative learning platform designed for

@@ -98,4 +98,25 @@ class ChairmanController extends Controller
         ]);
     }
 
+    public function profile()
+    {
+        $createdClasses = ClassModel::with(['instructor', 'students'])
+            ->where('chairman_id', auth()->id())
+            ->latest()
+            ->get()
+            ->map(function ($class) {
+                if ($class->is_active) {
+                    $lastActive = Carbon::parse($class->is_active);
+                    $class->is_active_now = $lastActive->gt(now()->subMinutes(1));
+                } else {
+                    $class->is_active_now = false;
+                }
+                return $class;
+            });
+
+        return Inertia::render('Chairman/Profile', [
+            'createdClasses' => $createdClasses,
+        ]);
+    }
+
 }

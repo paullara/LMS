@@ -125,6 +125,7 @@ Route::middleware(['auth', 'chairman'])->group(function () {
     Route::post('/chairman/create/class', [ChairmanController::class, 'storeClassroom']);
     Route::get('/chairman/classes', [ChairmanController::class, 'classes'])->name('chairman.created.classes');
     Route::get('/chairman/get/instructors', [ChairmanController::class, 'getInstructors']);
+    Route::get('/chairman/profile', [ChairmanController::class, 'profile'])->name('chairman.profile');
 });
 
 // Chairman creates a draft
@@ -164,7 +165,8 @@ Route::post('/video-call/{id}/messages', [VideoCallMessageController::class, 'st
 Route::middleware('auth')->group(function () {
     Route::post('/instructor/classroom/{id}/add-student', [InstructorController::class, 'addStudent'])->name('instructor.classroom.addStudent');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update.ss');
+    Route::post('/profile/update/{user}', [ProfileController::class, 'updateTest'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
     Route::get('/tasks/json', [TaskController::class, 'getTasks']);
