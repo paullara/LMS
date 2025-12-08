@@ -5,6 +5,12 @@ import InputLabel from "@/Components/InputLabel";
 import InputError from "@/Components/InputError";
 
 export default function Edit({ classModel }) {
+    const normalizeTime = (t) => {
+        if (!t) return "";
+        if (t.length === 5) return t + ":00"; // add seconds if missing
+        return t; // already HH:MM:SS
+    };
+
     const {
         data,
         setData,
@@ -16,19 +22,18 @@ export default function Edit({ classModel }) {
         name: classModel.name || "",
         description: classModel.description || "",
         subcode: classModel.subcode || "",
-        start_time: classModel.start_time || "",
-        end_time: classModel.end_time || "",
+        start_time: normalizeTime(classModel.start_time),
+        end_time: normalizeTime(classModel.end_time),
         yearlevel: classModel.yearlevel || "",
         section: classModel.section || "",
         photo: null,
-        _method: "PUT", // ✅ method spoofing
+        _method: "PUT",
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
         post(`/instructor/classroom/${classModel.id}`, {
-            forceFormData: true, // ✅ important for file uploads
+            forceFormData: true,
             preserveScroll: true,
         });
     };
@@ -79,9 +84,8 @@ export default function Edit({ classModel }) {
                     <div>
                         <InputLabel htmlFor="name" value="Course Title" />
                         <input
-                            type="text"
                             id="name"
-                            name="name"
+                            type="text"
                             value={data.name}
                             onChange={(e) => setData("name", e.target.value)}
                             className="w-full border rounded px-3 py-2"
@@ -108,7 +112,6 @@ export default function Edit({ classModel }) {
                             <input
                                 id="subcode"
                                 type="text"
-                                name="subcode"
                                 value={data.subcode}
                                 onChange={(e) =>
                                     setData("subcode", e.target.value)
@@ -126,7 +129,6 @@ export default function Edit({ classModel }) {
                             <input
                                 id="yearlevel"
                                 type="number"
-                                name="yearlevel"
                                 value={data.yearlevel}
                                 onChange={(e) =>
                                     setData("yearlevel", e.target.value)
@@ -143,7 +145,6 @@ export default function Edit({ classModel }) {
                             <input
                                 id="section"
                                 type="text"
-                                name="section"
                                 value={data.section}
                                 onChange={(e) =>
                                     setData("section", e.target.value)
@@ -153,6 +154,7 @@ export default function Edit({ classModel }) {
                             <InputError message={errors.section} />
                         </div>
 
+                        {/* START TIME */}
                         <div>
                             <InputLabel
                                 htmlFor="start_time"
@@ -161,8 +163,12 @@ export default function Edit({ classModel }) {
                             <input
                                 id="start_time"
                                 type="time"
-                                name="start_time"
-                                value={data.start_time?.slice(0, 5) || ""}
+                                step="1"
+                                value={
+                                    data.start_time
+                                        ? data.start_time.substring(0, 5)
+                                        : ""
+                                }
                                 onChange={(e) =>
                                     setData(
                                         "start_time",
@@ -174,13 +180,18 @@ export default function Edit({ classModel }) {
                             <InputError message={errors.start_time} />
                         </div>
 
+                        {/* END TIME */}
                         <div>
                             <InputLabel htmlFor="end_time" value="End Time" />
                             <input
                                 id="end_time"
                                 type="time"
-                                name="end_time"
-                                value={data.end_time?.slice(0, 5) || ""}
+                                step="1"
+                                value={
+                                    data.end_time
+                                        ? data.end_time.substring(0, 5)
+                                        : ""
+                                }
                                 onChange={(e) =>
                                     setData("end_time", e.target.value + ":00")
                                 }
@@ -193,8 +204,8 @@ export default function Edit({ classModel }) {
                     <div className="flex gap-4 mt-5">
                         <button
                             type="submit"
-                            disabled={processing}
                             className="bg-blue-500 text-white px-4 py-2 rounded"
+                            disabled={processing}
                         >
                             Update
                         </button>
@@ -203,7 +214,7 @@ export default function Edit({ classModel }) {
                             type="button"
                             onClick={() => {
                                 if (
-                                    window.confirm(
+                                    confirm(
                                         "Are you sure you want to delete this class?"
                                     )
                                 ) {

@@ -125,6 +125,19 @@ class InstructorController extends Controller
 
     public function updateClassroom(Request $request, $id)
     {
+        // Normalize incoming times (add seconds if missing)
+        if ($request->start_time && strlen($request->start_time) === 5) {
+            $request->merge([
+                'start_time' => $request->start_time . ':00'
+            ]);
+        }
+
+        if ($request->end_time && strlen($request->end_time) === 5) {
+            $request->merge([
+                'end_time' => $request->end_time . ':00'
+            ]);
+        }
+
         $classModel = ClassModel::where('id', $id)
             ->where('instructor_id', auth()->id())
             ->firstOrFail();
@@ -139,6 +152,7 @@ class InstructorController extends Controller
             'section' => 'sometimes|string|max:255',
         ]);
 
+        // Handle photo upload
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
             $filename = time() . "." . $file->getClientOriginalExtension();
@@ -148,8 +162,11 @@ class InstructorController extends Controller
 
         $classModel->update($data);
 
-        return redirect()->route('instructor.classList')->with('success', 'Classroom updated successfully.');
+        return redirect()
+            ->route('improved.classList')
+            ->with('success', 'Classroom updated successfully.');
     }
+
 
 
 
