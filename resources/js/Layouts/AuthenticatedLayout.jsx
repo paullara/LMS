@@ -102,15 +102,6 @@ export default function AuthenticatedLayout({ header, children }) {
                         </h1>
                     </Link>
 
-                    <Link
-                        href={route("student.test.profile")}
-                        className="flex items-center gap-2 mb-6"
-                    >
-                        <h1 className="text-black text-lg font-medium">
-                            Profile
-                        </h1>
-                    </Link>
-
                     {/* <Link
                         href={route("student.notifications")}
                         className="flex items-center gap-2 mb-6"
@@ -132,19 +123,19 @@ export default function AuthenticatedLayout({ header, children }) {
                 {/* Sticky Profile + Logout */}
                 <div className="p-4 border-t bg-gray-50 sticky bottom-0">
                     <NavLink
-                        href={route("profile.edit")}
-                        active={route().current("profile.edit")}
-                        className="w-full px-3 py-2 rounded-md text-sm font-medium"
+                        href={route("student.test.profile")}
+                        active={route().current("student.test.profile")}
+                        className="w-full px-3 py-2 text-left rounded-md text-sm font-medium text-black hover:text-red-800"
                     >
-                        Profile
+                        <h1 className="text-lg">Profile</h1>
                     </NavLink>
                     <Link
                         href={route("logout")}
                         method="post"
                         as="button"
-                        className="w-full px-3 py-2 text-left rounded-md text-sm font-medium text-black hover:text-red-800"
+                        className="w-full px-3 py-2 text-left rounded-md text-sm font-medium text-black hover:text-red-800 "
                     >
-                        Log Out
+                        <h1 className="text-lg">Log Out</h1>
                     </Link>
                 </div>
             </div>

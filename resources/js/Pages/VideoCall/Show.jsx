@@ -42,6 +42,10 @@ export default function VideoCall({ videoCall }) {
     const lastMessageRef = useRef(null);
     const [lastId, setLastId] = useState(null);
 
+    // Confirmation modal state
+    const [showConfirmation, setShowConfirmation] = useState(false);
+    const [confirmationMessage, setConfirmationMessage] = useState("");
+
     const currentUser = auth.user;
 
     // helper: register participant video element
@@ -137,6 +141,17 @@ export default function VideoCall({ videoCall }) {
                 const el = participantsVideoRefs.current.get(call.peer);
                 if (el) {
                     el.srcObject = remoteStream;
+
+                    // Show confirmation for participant camera
+                    const participant = participants.find(
+                        (p) => p.peer_id === call.peer
+                    );
+                    if (participant) {
+                        setConfirmationMessage(
+                            `${participant.user.firstname} ${participant.user.lastname} has opened their camera`
+                        );
+                        setShowConfirmation(true);
+                    }
                 } else {
                     // buffer the stream until the participant card mounts
                     pendingStreamsRef.current.set(call.peer, remoteStream);
@@ -548,6 +563,26 @@ export default function VideoCall({ videoCall }) {
                     Peer ID: {peerId || "Connecting..."}
                 </div>
             </header>
+
+            {/* Confirmation Modal */}
+            {showConfirmation && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-[#1b1f2b] border border-gray-700 rounded-lg p-6 max-w-sm shadow-xl">
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                            Camera Activated
+                        </h3>
+                        <p className="text-gray-300 mb-6">
+                            {confirmationMessage}
+                        </p>
+                        <button
+                            onClick={() => setShowConfirmation(false)}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
