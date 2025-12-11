@@ -94,7 +94,9 @@ export default function Members({ classId }) {
                                 onClick={() => handleAddStudent(student.id)}
                             >
                                 <span>
-                                    {student.firstname} {student.lastname}
+                                    {student.firstname} {student.lastname} {"-"}{" "}
+                                    {""}
+                                    {student.course}
                                 </span>
                                 {adding && (
                                     <span className="text-xs text-gray-400">
@@ -154,8 +156,12 @@ export default function Members({ classId }) {
 
                                 <div className="ml-1 flex-1">
                                     <h3 className="text-gray-900 font-medium">
-                                        {student.firstname} {student.lastname}
+                                        {student.firstname} {student.lastname}{" "}
+                                        {"-"} {""} {student.course}
                                     </h3>
+                                    <p className="text-xs text-gray-500">
+                                        {student.student_id}
+                                    </p>
                                     <p className="text-xs text-gray-400">
                                         Student
                                     </p>

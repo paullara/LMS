@@ -252,7 +252,7 @@ export default function VideoCall({ videoCall }) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: true,
-                audio: micOn,
+                audio: micOn, // Request audio if mic is already on
             });
             streamRef.current = stream;
 
@@ -274,28 +274,97 @@ export default function VideoCall({ videoCall }) {
 
     const toggleMic = async () => {
         if (!micOn && !cameraOn) {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: true,
-            });
-            streamRef.current = stream;
+            // No stream exists, request audio-only stream
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                });
+                streamRef.current = stream;
 
-            // attach mic to participant card if exists (local user)
-            const userKey = peerId || String(currentUser.id);
-            const el = participantsVideoRefs.current.get(userKey);
-            if (el) el.srcObject = stream;
+                // attach mic to participant card if exists (local user)
+                const userKey = peerId || String(currentUser.id);
+                const el = participantsVideoRefs.current.get(userKey);
+                if (el) el.srcObject = stream;
 
-            // Only attach main video to stream if host (avoid replacing main for participants)
-            if (currentUser.id === videoCall.host_id && mainVideoRef.current) {
-                mainVideoRef.current.srcObject = stream;
+                // Only attach main video to stream if host (avoid replacing main for participants)
+                if (
+                    currentUser.id === videoCall.host_id &&
+                    mainVideoRef.current
+                ) {
+                    mainVideoRef.current.srcObject = stream;
+                }
+
+                setMicOn(true);
+            } catch (err) {
+                console.error("Mic error:", err);
+            }
+            return;
+        }
+
+        if (!micOn && cameraOn) {
+            // Camera is on but no audio track; need to get new stream with both
+            try {
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true,
+                });
+
+                // Stop old stream and replace with new one
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach((t) => t.stop());
+                }
+                streamRef.current = newStream;
+
+                // Update participant card
+                const userKey = peerId || String(currentUser.id);
+                const el = participantsVideoRefs.current.get(userKey);
+                if (el) el.srcObject = newStream;
+
+                // Update main video if host
+                if (
+                    currentUser.id === videoCall.host_id &&
+                    mainVideoRef.current
+                ) {
+                    mainVideoRef.current.srcObject = newStream;
+                }
+
+                setMicOn(true);
+            } catch (err) {
+                console.error("Mic error:", err);
+            }
+            return;
+        }
+
+        // Mic is on; toggle audio tracks
+        if (streamRef.current) {
+            const hasAudioTracks = streamRef.current
+                .getTracks()
+                .some((t) => t.kind === "audio");
+
+            if (hasAudioTracks) {
+                // Disable audio tracks
+                streamRef.current.getTracks().forEach((track) => {
+                    if (track.kind === "audio") track.enabled = false;
+                });
+                setMicOn(false);
+            } else {
+                // No audio tracks to toggle, need to add them
+                try {
+                    const audioStream =
+                        await navigator.mediaDevices.getUserMedia({
+                            audio: true,
+                        });
+                    audioStream.getTracks().forEach((track) => {
+                        if (track.kind === "audio") {
+                            streamRef.current.addTrack(track);
+                        }
+                    });
+                    setMicOn(true);
+                } catch (err) {
+                    console.error("Failed to add audio track:", err);
+                }
             }
         }
-
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach((track) => {
-                if (track.kind === "audio") track.enabled = !micOn;
-            });
-        }
-        setMicOn(!micOn);
     };
 
     // --- Screen Sharing ---

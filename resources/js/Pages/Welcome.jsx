@@ -338,7 +338,7 @@ export default function Welcome({ auth }) {
                     {/* Main Content */}
                     <motion.h1
                         id="hero-title"
-                        className="relative z-10 text-7xl font-semibold text-gray-800 mt-40 flex flex-wrap justify-center"
+                        className="relative z-10 text-7xl font-semibold text-gray-800 mt-14 flex flex-wrap justify-center"
                         variants={container}
                         initial="hidden"
                         animate="visible"

@@ -123,52 +123,60 @@ class InstructorController extends Controller
         ]);
     }
 
-    public function updateClassroom(Request $request, $id)
-    {
-        // Normalize incoming times (add seconds if missing)
-        if ($request->start_time && strlen($request->start_time) === 5) {
-            $request->merge([
-                'start_time' => $request->start_time . ':00'
-            ]);
-        }
 
-        if ($request->end_time && strlen($request->end_time) === 5) {
-            $request->merge([
-                'end_time' => $request->end_time . ':00'
-            ]);
-        }
-
-        $classModel = ClassModel::where('id', $id)
-            ->where('instructor_id', auth()->id())
-            ->firstOrFail();
-
-        $data = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'description' => 'sometimes|string|max:1000',
-            'subcode' => 'sometimes|string|max:255',
-            'start_time' => 'nullable|date_format:H:i:s',
-            'end_time' => 'nullable|date_format:H:i:s|after:start_time',
-            'yearlevel' => 'sometimes|integer',
-            'section' => 'sometimes|string|max:255',
+public function updateClassroom(Request $request, $id)
+{
+    // Normalize incoming times (add seconds if missing)
+    if ($request->start_time && strlen($request->start_time) === 5) {
+        $request->merge([
+            'start_time' => $request->start_time . ':00'
         ]);
-
-        // Handle photo upload
-        if ($request->hasFile('photo')) {
-            $file = $request->file('photo');
-            $filename = time() . "." . $file->getClientOriginalExtension();
-            $file->move(public_path('class'), $filename);
-            $data['photo'] = $filename;
-        }
-
-        $classModel->update($data);
-
-        return redirect()
-            ->route('improved.classList')
-            ->with('success', 'Classroom updated successfully.');
     }
 
+    if ($request->end_time && strlen($request->end_time) === 5) {
+        $request->merge([
+            'end_time' => $request->end_time . ':00'
+        ]);
+    }
 
+    $classModel = ClassModel::where('id', $id)
+        ->where('instructor_id', auth()->id())
+        ->firstOrFail();
 
+    $data = $request->validate([
+        'name' => 'sometimes|string|max:255',
+        'description' => 'sometimes|string|max:1000',
+        'subcode' => 'sometimes|string|max:255',
+        'start_time' => 'nullable|date_format:H:i:s',
+        'end_time' => 'nullable|date_format:H:i:s',
+        'yearlevel' => 'sometimes|integer',
+        'section' => 'sometimes|string|max:255',
+    ]);
+
+    // Custom validation: end_time must be after start_time if both are provided
+    if ($request->start_time && $request->end_time) {
+        $startSeconds = strtotime($request->start_time) - strtotime('00:00:00');
+        $endSeconds = strtotime($request->end_time) - strtotime('00:00:00');
+        
+        if ($endSeconds <= $startSeconds) {
+            return back()->withErrors(['end_time' => 'End time must be after start time']);
+        }
+    }
+
+    // Handle photo upload
+    if ($request->hasFile('photo')) {
+        $file = $request->file('photo');
+        $filename = time() . "." . $file->getClientOriginalExtension();
+        $file->move(public_path('class'), $filename);
+        $data['photo'] = $filename;
+    }
+
+    $classModel->update($data);
+
+    return redirect()
+        ->route('improved.classList')
+        ->with('success', 'Classroom updated successfully.');
+}
 
     public function destroy($id)
     {
@@ -451,10 +459,10 @@ class InstructorController extends Controller
             'query' => 'required|string|min:1'
         ]);
 
-        $student = User::where('firstname', 'like', '%' . $request->input('query') . '%')
+        $student = User::where('student_id', 'like', '%' . $request->input('query') . '%')
             ->where('id', '!=', auth()->id())
             ->limit(10)
-            ->get(['id', 'firstname', 'lastname']);
+            ->get(['id', 'firstname', 'lastname', 'course']);
 
         return response()->json($student);
     }

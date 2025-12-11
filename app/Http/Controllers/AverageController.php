@@ -30,7 +30,9 @@ class AverageController extends Controller
         $rows = [];
 
         foreach ($class->students as $student) {
-            $row = ['Student' => $student->firstname];
+            $fullname = $student->firstname. ' '.$student->middlename. ' '.$student->lastname;
+            $row = ['Student ID Number' => $student->student_id, 
+                    'Student' => $fullname];
             $totalScore = 0;
             $totalItems = 0;
 
@@ -69,7 +71,7 @@ class AverageController extends Controller
         }
 
         return response()->json([
-            'columns' => array_merge(['Student'], $columns, ['Average']),
+            'columns' => array_merge(['Student ID Number', 'Student'], $columns, ['Average']),
             'rows' => $rows
         ]);
     }

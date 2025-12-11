@@ -154,7 +154,6 @@ export default function Edit({ classModel }) {
                             <InputError message={errors.section} />
                         </div>
 
-                        {/* START TIME */}
                         <div>
                             <InputLabel
                                 htmlFor="start_time"
@@ -180,7 +179,6 @@ export default function Edit({ classModel }) {
                             <InputError message={errors.start_time} />
                         </div>
 
-                        {/* END TIME */}
                         <div>
                             <InputLabel htmlFor="end_time" value="End Time" />
                             <input
