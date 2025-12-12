@@ -43,7 +43,7 @@ class RegisteredUserController extends Controller
         $studentId = StudentIdNumber::where('student_id_number', $request->student_id)->first();
         if (!$studentId) {
             return redirect()->back()->withErrors([
-                'student_id_number' => 'The provided student ID is not valid.'
+                'student_id' => 'The provided student ID is not valid.'
             ])->withInput();
         }
 
