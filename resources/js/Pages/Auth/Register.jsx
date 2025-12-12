@@ -12,6 +12,7 @@ export default function Register() {
         email: "",
         password: "",
         password_confirmation: "",
+        student_id: "",
     });
 
     const submit = (e) => {
@@ -128,6 +129,28 @@ export default function Register() {
                                 />
                                 <InputError
                                     message={errors.email}
+                                    className="mt-2"
+                                />
+                            </div>
+                            {/* Student ID */}
+                            <div>
+                                <InputLabel
+                                    htmlFor="student_id_number"
+                                    value="Student ID"
+                                />
+                                <TextInput
+                                    id="student_id"
+                                    name="student_id"
+                                    value={data.student_id}
+                                    className="mt-1 block w-full rounded-lg"
+                                    onChange={(e) =>
+                                        setData("student_id", e.target.value)
+                                    }
+                                    required
+                                    placeholder="e.g., 20-SC-1001"
+                                />
+                                <InputError
+                                    message={errors.student_id} // <-- will show server validation error
                                     className="mt-2"
                                 />
                             </div>
