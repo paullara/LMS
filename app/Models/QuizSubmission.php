@@ -9,9 +9,9 @@ class QuizSubmission extends Model
     protected $fillable = [
         'quiz_id',
         'student_id',
-        'answers',
         'score',
-        'status'
+        'submitted_at',
+        'graded_at',
     ];
 
     public function quiz()
@@ -22,5 +22,10 @@ class QuizSubmission extends Model
     public function student()
     {
         return $this->belongsTo(User::class, 'student_id');
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(Answer::class, 'submission_id');
     }
 }

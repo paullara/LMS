@@ -8,8 +8,8 @@ class Choice extends Model
 {
     protected $fillable = [
         'question_id',
-        'label',
-        'text',
+        'choice_text',
+        'is_correct',
     ];
 
     public function question()

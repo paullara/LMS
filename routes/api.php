@@ -10,8 +10,10 @@ use App\Http\Controllers\MessageController;
 Route::get('/classroom', [AdminController::class, 'classroom'])->name('classroom');
 
 // students api
+Route::get('/quizzes/{classId}', [QuizController::class, 'getQuizzes']);
 Route::get('/students', [AdminController::class, 'getStudents']);
 Route::post('/quiz', [QuizController::class, 'store']);
+
 
 // routes/api.php
 Route::get('/instructor/groups/{group}/messages', [MessageController::class, 'index'])->middleware('auth:sanctum');

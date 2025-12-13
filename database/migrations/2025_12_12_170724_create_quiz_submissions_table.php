@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('quiz_submissions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('quiz_id')->constrained()->onDelete('cascade');
-            $table->foreignId('student_id')->constrained('users');
-            $table->enum('status', ['finished', 'not_finished'])->default('not_finished');
-            $table->json('answers');
-            $table->integer('score');
+            $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
+            $table->integer('score')->nullable();
+            $table->timestamp('submitted_at')->nullable();
+            $table->timestamp('graded_at')->nullable();
             $table->timestamps();
         });
     }

@@ -8,13 +8,11 @@ class Question extends Model
 {
     protected $fillable = [
         'quiz_id',
-        'question_text',
         'type',
+        'question_text',
         'correct_answer',
-        'reference_answer',
-        'min_score',
-        'max_score',
         'points',
+        'rubric'
     ];
 
     public function quiz()

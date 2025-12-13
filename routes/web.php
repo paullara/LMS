@@ -11,6 +11,8 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\QuizSubmissionController;
+use App\Http\Controllers\QuizGradingController;
 use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\VideoCallMessageController;
@@ -151,7 +153,6 @@ Route::post('/classroom/{id}/threads', [ThreadController::class, 'storeThreads']
 Route::post('/thread/{thread}/reply', [InstructorController::class, 'storeReply'])->name('thread.reply');
 Route::post('/threads/{thread}/replies', [ThreadController::class, 'storeThreadReply']);
 Route::post('/replies', [ThreadController::class, 'storeReply']);
-Route::get('/quizzes/{id}', [QuizController::class, 'getQuizzes']);
 Route::get('/submissions/quiz', [QuizController::class, 'submissions']);
 Route::get('/instructors/json', [DashboardController::class, 'getInstructor']);
 Route::get('/students/json', [DashboardController::class, 'getStudents']);
@@ -184,6 +185,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/student/groups', [StudentController::class, 'groups'])->name('student.groups');
     Route::get('/student/groups/{group}', [StudentController::class, 'showGroup'])->name('student.groups.show');
     Route::get('/student/test/profile', [StudentController::class, 'testProfile'])->name('student.test.profile');
+    Route::post('/classes/{class}/quizzes', [QuizController::class, 'store']);
+    Route::get('/classes/{class}/quizzes', [QuizController::class, 'index']);
+    Route::get('/quizzes/{quiz}', [QuizController::class, 'show']);
+    Route::post('/quizzes/{quiz}/submit', [QuizSubmissionController::class, 'store']);
+    Route::post('/submissions/{submission}/grade-essay', [QuizGradingController::class, 'gradeEssay']);
 });
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('redirect.google');

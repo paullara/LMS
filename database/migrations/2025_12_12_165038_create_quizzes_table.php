@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('questions', function (Blueprint $table) {
-            $table->integer('points')->nullable()->after('reference_answer');
-            $table->dropColumn(['max_score', 'min_score']);
+        Schema::create('quizzes', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('class_id')->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -22,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('questions', function (Blueprint $table) {
-            $table->dropColumn('points');
-        });
+        Schema::dropIfExists('quizzes');
     }
 };

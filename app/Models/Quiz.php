@@ -9,12 +9,13 @@ class Quiz extends Model
     protected $fillable = [
         'class_id',
         'title',
-        'description',
-        'start_time',
-        'end_time',
-        'quiz_type',
-        'duration_minutes',
+        'description'
     ];
+
+    public function class()
+    {
+        return $this->belongsTo(ClassModel::class);
+    }
 
     public function questions()
     {
