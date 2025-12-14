@@ -67,6 +67,11 @@ export default function VideoCall({ videoCall }) {
                         if (prevStreamRef.current) {
                             try {
                                 el.srcObject = prevStreamRef.current;
+                                // mute local user's own element; unmute others
+                                el.muted =
+                                    keyStr ===
+                                    (peerId || String(currentUser.id));
+                                el.play?.().catch(() => {});
                             } catch (e) {
                                 console.warn(
                                     "Failed to set prev stream on participant element",
@@ -89,6 +94,9 @@ export default function VideoCall({ videoCall }) {
                     if (streamRef.current) {
                         try {
                             el.srcObject = streamRef.current;
+                            el.muted =
+                                keyStr === (peerId || String(currentUser.id));
+                            el.play?.().catch(() => {});
                         } catch (e) {
                             console.warn(
                                 "Failed to set local stream on participant element",
@@ -107,6 +115,9 @@ export default function VideoCall({ videoCall }) {
         if (pending) {
             try {
                 el.srcObject = pending;
+                const isLocal = keyStr === (peerId || String(currentUser.id));
+                el.muted = isLocal;
+                el.play?.().catch(() => {});
             } catch (e) {
                 console.warn(
                     "Failed to attach pending stream to participant element",
@@ -146,6 +157,12 @@ export default function VideoCall({ videoCall }) {
                 ) {
                     // Host's screen share -> main video
                     mainVideoRef.current.srcObject = remoteStream;
+                    // mute main for local host only, allow remote users to hear audio
+                    mainVideoRef.current.muted =
+                        currentUser.id === videoCall.host_id;
+                    try {
+                        mainVideoRef.current.play();
+                    } catch (e) {}
                     return;
                 }
 
@@ -154,6 +171,9 @@ export default function VideoCall({ videoCall }) {
                     const el = participantsVideoRefs.current.get(call.peer);
                     if (el) {
                         el.srcObject = remoteStream;
+                        // host camera stream should be audible to remote participants
+                        el.muted = false;
+                        el.play?.().catch(() => {});
                     } else {
                         pendingStreamsRef.current.set(call.peer, remoteStream);
                     }
@@ -164,6 +184,11 @@ export default function VideoCall({ videoCall }) {
                 const el = participantsVideoRefs.current.get(call.peer);
                 if (el) {
                     el.srcObject = remoteStream;
+                    // if this stream belongs to the local user, keep it muted, otherwise allow audio
+                    const isLocal =
+                        call.peer === (peerId || String(currentUser.id));
+                    el.muted = isLocal;
+                    el.play?.().catch(() => {});
 
                     // Show confirmation for participant camera
                     const participant = participants.find(
@@ -316,11 +341,22 @@ export default function VideoCall({ videoCall }) {
             // Show in participant card for current user (if mounted)
             const userKey = peerId || String(currentUser.id);
             const el = participantsVideoRefs.current.get(userKey);
-            if (el) el.srcObject = stream;
+            if (el) {
+                el.srcObject = stream;
+                el.muted = userKey === (peerId || String(currentUser.id));
+                el.play?.().catch(() => {});
+            }
 
             // Only set main video if the local user is the host (we don't want participants to replace main)
             if (currentUser.id === videoCall.host_id && mainVideoRef.current) {
                 mainVideoRef.current.srcObject = stream;
+                mainVideoRef.current.muted = true; // mute local host main to avoid feedback
+                try {
+                    mainVideoRef.current.play();
+                } catch (e) {}
+            } else if (mainVideoRef.current) {
+                // ensure remote users hear audio when main shows a remote stream
+                mainVideoRef.current.muted = false;
             }
 
             setCameraOn(true);
@@ -331,7 +367,8 @@ export default function VideoCall({ videoCall }) {
                     const hostId = hostPeerIdRef.current;
                     const call = peerInstance.current.call(
                         hostId,
-                        streamRef.current
+                        streamRef.current,
+                        { metadata: { source: "camera" } }
                     );
                     // track this outgoing call so we can close it when camera is turned off
                     const arr = activeCallsRef.current.get(hostId) || [];
@@ -372,7 +409,11 @@ export default function VideoCall({ videoCall }) {
                 // attach mic to participant card if exists (local user)
                 const userKey = peerId || String(currentUser.id);
                 const el = participantsVideoRefs.current.get(userKey);
-                if (el) el.srcObject = stream;
+                if (el) {
+                    el.srcObject = stream;
+                    el.muted = userKey === (peerId || String(currentUser.id));
+                    el.play?.().catch(() => {});
+                }
 
                 // Only attach main video to stream if host (avoid replacing main for participants)
                 if (
@@ -380,6 +421,10 @@ export default function VideoCall({ videoCall }) {
                     mainVideoRef.current
                 ) {
                     mainVideoRef.current.srcObject = stream;
+                    mainVideoRef.current.muted = true;
+                    try {
+                        mainVideoRef.current.play();
+                    } catch (e) {}
                 }
 
                 setMicOn(true);
@@ -392,7 +437,8 @@ export default function VideoCall({ videoCall }) {
                         const hostId = hostPeerIdRef.current;
                         const call = peerInstance.current.call(
                             hostId,
-                            streamRef.current
+                            streamRef.current,
+                            { metadata: { source: "microphone" } }
                         );
                         const arr = activeCallsRef.current.get(hostId) || [];
                         arr.push(call);
@@ -441,7 +487,11 @@ export default function VideoCall({ videoCall }) {
                 // Update participant card
                 const userKey = peerId || String(currentUser.id);
                 const el = participantsVideoRefs.current.get(userKey);
-                if (el) el.srcObject = newStream;
+                if (el) {
+                    el.srcObject = newStream;
+                    el.muted = userKey === (peerId || String(currentUser.id));
+                    el.play?.().catch(() => {});
+                }
 
                 // Update main video if host
                 if (
@@ -449,6 +499,10 @@ export default function VideoCall({ videoCall }) {
                     mainVideoRef.current
                 ) {
                     mainVideoRef.current.srcObject = newStream;
+                    mainVideoRef.current.muted = true;
+                    try {
+                        mainVideoRef.current.play();
+                    } catch (e) {}
                 }
 
                 setMicOn(true);
@@ -461,7 +515,8 @@ export default function VideoCall({ videoCall }) {
                         const hostId = hostPeerIdRef.current;
                         const call = peerInstance.current.call(
                             hostId,
-                            streamRef.current
+                            streamRef.current,
+                            { metadata: { source: "camera" } }
                         );
                         const arr = activeCallsRef.current.get(hostId) || [];
                         arr.push(call);
@@ -570,7 +625,15 @@ export default function VideoCall({ videoCall }) {
 
             // Use the display stream as the active stream
             streamRef.current = stream;
-            if (mainVideoRef.current) mainVideoRef.current.srcObject = stream;
+            if (mainVideoRef.current) {
+                mainVideoRef.current.srcObject = stream;
+                // mute only for the local user (host) to avoid feedback
+                mainVideoRef.current.muted =
+                    currentUser.id === videoCall.host_id;
+                try {
+                    mainVideoRef.current.play();
+                } catch (e) {}
+            }
             setSharing(true);
 
             // Ensure host's participant card does NOT show the shared screen:
@@ -700,6 +763,8 @@ export default function VideoCall({ videoCall }) {
             if (hostEl) {
                 try {
                     hostEl.srcObject = streamRef.current;
+                    hostEl.muted = true; // host's own card should be muted for local
+                    hostEl.play?.().catch(() => {});
                 } catch (e) {
                     console.warn(
                         "Error restoring host participant video after screen share:",
@@ -715,6 +780,10 @@ export default function VideoCall({ videoCall }) {
             ) {
                 try {
                     mainVideoRef.current.srcObject = streamRef.current;
+                    mainVideoRef.current.muted = true;
+                    try {
+                        mainVideoRef.current.play();
+                    } catch (e) {}
                 } catch (e) {}
             }
             prevStreamRef.current = null;
@@ -989,7 +1058,7 @@ export default function VideoCall({ videoCall }) {
                         ref={mainVideoRef}
                         autoPlay
                         playsInline
-                        muted
+                        muted={currentUser.id === videoCall.host_id}
                         className="rounded-xl bg-black w-full max-w-5xl aspect-video object-cover shadow-lg mb-24"
                     />
 
