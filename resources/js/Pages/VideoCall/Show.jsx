@@ -57,30 +57,34 @@ export default function VideoCall({ videoCall }) {
         if (el) {
             participantsVideoRefs.current.set(keyStr, el);
 
-            // We're only going to attach a stream to the participant CARD when:
-            // - there's a stream to attach, AND
-            // - it's the local user's card
+            // We're only going to attach a stream to the participant CARD when it's the local user's card
             if (keyStr === (peerId || String(currentUser.id))) {
-                // If host is currently sharing (display stream in streamRef), don't attach that display stream
-                if (sharing && currentUser.id === videoCall.host_id) {
-                    // attach previous camera/mic stream if we have one, otherwise leave the card empty
-                    if (prevStreamRef.current) {
-                        try {
-                            el.srcObject = prevStreamRef.current;
-                        } catch (e) {
-                            console.warn(
-                                "Failed to set prev stream on participant element",
-                                e
-                            );
+                // Host-specific behavior: only show camera in the host's card while screen-sharing
+                if (currentUser.id === videoCall.host_id) {
+                    if (sharing) {
+                        // attach previous camera/mic stream if we have one, otherwise leave the card empty
+                        if (prevStreamRef.current) {
+                            try {
+                                el.srcObject = prevStreamRef.current;
+                            } catch (e) {
+                                console.warn(
+                                    "Failed to set prev stream on participant element",
+                                    e
+                                );
+                            }
+                        } else {
+                            try {
+                                el.srcObject = null;
+                            } catch (_) {}
                         }
                     } else {
-                        // intentionally leave host card empty while sharing
+                        // When the host is not sharing, intentionally keep their participant card empty
                         try {
                             el.srcObject = null;
                         } catch (_) {}
                     }
                 } else {
-                    // Normal case: attach whatever current local stream is (camera/mic)
+                    // Non-host local user: attach whatever current local stream is (camera/mic)
                     if (streamRef.current) {
                         try {
                             el.srcObject = streamRef.current;
