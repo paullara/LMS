@@ -367,8 +367,7 @@ export default function VideoCall({ videoCall }) {
                     const hostId = hostPeerIdRef.current;
                     const call = peerInstance.current.call(
                         hostId,
-                        streamRef.current,
-                        { metadata: { source: "camera" } }
+                        streamRef.current
                     );
                     // track this outgoing call so we can close it when camera is turned off
                     const arr = activeCallsRef.current.get(hostId) || [];
@@ -437,8 +436,7 @@ export default function VideoCall({ videoCall }) {
                         const hostId = hostPeerIdRef.current;
                         const call = peerInstance.current.call(
                             hostId,
-                            streamRef.current,
-                            { metadata: { source: "microphone" } }
+                            streamRef.current
                         );
                         const arr = activeCallsRef.current.get(hostId) || [];
                         arr.push(call);
@@ -515,8 +513,7 @@ export default function VideoCall({ videoCall }) {
                         const hostId = hostPeerIdRef.current;
                         const call = peerInstance.current.call(
                             hostId,
-                            streamRef.current,
-                            { metadata: { source: "camera" } }
+                            streamRef.current
                         );
                         const arr = activeCallsRef.current.get(hostId) || [];
                         arr.push(call);
