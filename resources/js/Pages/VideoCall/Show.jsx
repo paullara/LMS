@@ -1443,6 +1443,10 @@ export default function VideoCall({ videoCall }) {
                             {participants.map((p) => {
                                 // choose stable key for ref lookup: prefer peer_id, fallback to user id
                                 const refKey = p.peer_id || String(p.user.id);
+                                // reaction overlay may be keyed by peer_id or by user id string
+                                const overlayEmoji =
+                                    reactionOverlays[p.peer_id] ||
+                                    reactionOverlays[String(p.user.id)];
                                 return (
                                     <div
                                         key={p.id}
@@ -1460,6 +1464,65 @@ export default function VideoCall({ videoCall }) {
                                             muted={p.user.id === currentUser.id}
                                             className="rounded-lg w-full h-32 object-cover bg-black"
                                         />
+
+                                        {/* Reaction overlay (transient) */}
+                                        {overlayEmoji && (
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <div className="text-4xl animate-bounce">
+                                                    {overlayEmoji}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Small action button to open reaction picker */}
+                                        <button
+                                            onClick={() =>
+                                                openPicker(p.user.id)
+                                            }
+                                            className="absolute top-2 right-2 bg-black/50 hover:bg-black/60 text-sm p-1 rounded-full"
+                                            title={`React to ${p.user.firstname}`}
+                                            type="button"
+                                        >
+                                            😊
+                                        </button>
+
+                                        {/* Emoji picker for this participant */}
+                                        {pickerOpenFor === p.user.id && (
+                                            <div className="absolute top-10 right-2 z-40 bg-[#1b1f2b] border border-gray-700 rounded-md p-2 flex gap-1">
+                                                {[
+                                                    "👍",
+                                                    "❤️",
+                                                    "😂",
+                                                    "😮",
+                                                    "😢",
+                                                    "👏",
+                                                ].map((e) => (
+                                                    <button
+                                                        key={e}
+                                                        onClick={() =>
+                                                            sendReaction(
+                                                                p.user.id,
+                                                                e
+                                                            )
+                                                        }
+                                                        className="p-1 text-xl hover:scale-110 transition"
+                                                        type="button"
+                                                    >
+                                                        {e}
+                                                    </button>
+                                                ))}
+                                                <button
+                                                    onClick={() =>
+                                                        setPickerOpenFor(null)
+                                                    }
+                                                    className="ml-2 text-xs text-gray-400"
+                                                    type="button"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
+
                                         {/* Fallback avatar + name overlay (will show even if video blank) */}
                                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                             <img
