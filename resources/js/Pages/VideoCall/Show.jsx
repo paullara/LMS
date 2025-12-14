@@ -42,6 +42,10 @@ export default function VideoCall({ videoCall }) {
     const lastMessageRef = useRef(null);
     const [lastId, setLastId] = useState(null);
 
+    const [participantsWithVideo, setParticipantsWithVideo] = useState(
+        new Set()
+    );
+
     // Confirmation modal state
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState("");
@@ -57,60 +61,41 @@ export default function VideoCall({ videoCall }) {
         if (el) {
             participantsVideoRefs.current.set(keyStr, el);
 
-            // We're only going to attach a stream to the participant CARD when:
-            // - there's a stream to attach, AND
-            // - it's the local user's card
+            // Attach pending stream if exists
+            const pending = pendingStreamsRef.current.get(keyStr);
+            if (pending) {
+                try {
+                    el.srcObject = pending;
+                    setParticipantsWithVideo((prev) =>
+                        new Set(prev).add(keyStr)
+                    );
+                } catch (e) {
+                    console.warn("Failed to attach pending stream", e);
+                }
+                pendingStreamsRef.current.delete(keyStr);
+                return;
+            }
+
+            // Attach local stream if applicable
             if (keyStr === (peerId || String(currentUser.id))) {
-                // If host is currently sharing (display stream in streamRef), don't attach that display stream
-                if (sharing && currentUser.id === videoCall.host_id) {
-                    // attach previous camera/mic stream if we have one, otherwise leave the card empty
-                    if (prevStreamRef.current) {
-                        try {
-                            el.srcObject = prevStreamRef.current;
-                        } catch (e) {
-                            console.warn(
-                                "Failed to set prev stream on participant element",
-                                e
-                            );
-                        }
-                    } else {
-                        // intentionally leave host card empty while sharing
-                        try {
-                            el.srcObject = null;
-                        } catch (_) {}
-                    }
-                } else {
-                    // Normal case: attach whatever current local stream is (camera/mic)
-                    if (streamRef.current) {
-                        try {
-                            el.srcObject = streamRef.current;
-                        } catch (e) {
-                            console.warn(
-                                "Failed to set local stream on participant element",
-                                e
-                            );
-                        }
+                if (streamRef.current) {
+                    try {
+                        el.srcObject = streamRef.current;
+                        setParticipantsWithVideo((prev) =>
+                            new Set(prev).add(keyStr)
+                        );
+                    } catch (e) {
+                        console.warn("Failed to set local stream", e);
                     }
                 }
             }
         } else {
             participantsVideoRefs.current.delete(keyStr);
-        }
-
-        // if there is a pending remote stream for this peer, attach it now
-        const pending = pendingStreamsRef.current.get(keyStr);
-        if (pending) {
-            try {
-                el.srcObject = pending;
-            } catch (e) {
-                console.warn(
-                    "Failed to attach pending stream to participant element",
-                    e
-                );
-            }
-            pendingStreamsRef.current.delete(keyStr);
-            // no further local stream attach necessary in this case
-            return;
+            setParticipantsWithVideo((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(keyStr);
+                return newSet;
+            });
         }
     };
 
@@ -670,8 +655,10 @@ export default function VideoCall({ videoCall }) {
                         </div>
                         <div className="grid grid-cols-1 gap-4">
                             {participants.map((p) => {
-                                // choose stable key for ref lookup: prefer peer_id, fallback to user id
                                 const refKey = p.peer_id || String(p.user.id);
+                                const hasVideo =
+                                    participantsWithVideo.has(refKey);
+
                                 return (
                                     <div
                                         key={p.id}
@@ -689,19 +676,23 @@ export default function VideoCall({ videoCall }) {
                                             muted={p.user.id === currentUser.id}
                                             className="rounded-lg w-full h-32 object-cover bg-black"
                                         />
-                                        {/* Fallback avatar + name overlay (will show even if video blank) */}
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                            <img
-                                                src={`/${p.user.profile_picture}`}
-                                                className="w-12 h-12 rounded-full border border-gray-600 mb-1"
-                                            />
-                                            <span className="text-xs text-gray-300 text-center">
-                                                {p.user.firstname}{" "}
-                                                {p.user.lastname}
-                                                {p.user.id === currentUser.id &&
-                                                    " (You)"}
-                                            </span>
-                                        </div>
+
+                                        {/* Show overlay only if video is OFF */}
+                                        {!hasVideo && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                                <img
+                                                    src={`/${p.user.profile_picture}`}
+                                                    className="w-12 h-12 rounded-full border border-gray-600 mb-1"
+                                                />
+                                                <span className="text-xs text-gray-300 text-center">
+                                                    {p.user.firstname}{" "}
+                                                    {p.user.lastname}
+                                                    {p.user.id ===
+                                                        currentUser.id &&
+                                                        " (You)"}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
