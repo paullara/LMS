@@ -21,6 +21,7 @@ export default function VideoCall({ videoCall }) {
     const streamRef = useRef(null);
     const prevStreamRef = useRef(null);
     const calledPeers = useRef(new Set());
+    // Map of peerId => Array of PeerJS Call objects (support multiple simultaneous calls)
     const activeCallsRef = useRef(new Map());
     const hostPeerIdRef = useRef(null);
     const pendingStreamsRef = useRef(new Map());
@@ -134,14 +135,32 @@ export default function VideoCall({ videoCall }) {
 
             call.on("stream", (remoteStream) => {
                 const callerIsHost = call.peer === hostPeerIdRef.current;
-                if (callerIsHost && mainVideoRef.current) {
-                    // Host's stream (camera or screen-share) => main video
+
+                // Use metadata to determine whether this incoming host stream is the screen share or camera
+                const source = call.metadata?.source || null;
+
+                if (
+                    callerIsHost &&
+                    source === "screen" &&
+                    mainVideoRef.current
+                ) {
+                    // Host's screen share -> main video
                     mainVideoRef.current.srcObject = remoteStream;
                     return;
                 }
 
+                // For host camera streams, attach to the host participant card
+                if (callerIsHost && source === "camera") {
+                    const el = participantsVideoRefs.current.get(call.peer);
+                    if (el) {
+                        el.srcObject = remoteStream;
+                    } else {
+                        pendingStreamsRef.current.set(call.peer, remoteStream);
+                    }
+                    return;
+                }
+
                 // Non-host: attach only to participant-card element
-                // If the participant element isn't mounted yet, buffer the stream.
                 const el = participantsVideoRefs.current.get(call.peer);
                 if (el) {
                     el.srcObject = remoteStream;
@@ -164,10 +183,28 @@ export default function VideoCall({ videoCall }) {
 
             call.on("close", () => {
                 const callerIsHost = call.peer === hostPeerIdRef.current;
-                if (callerIsHost && mainVideoRef.current) {
+                const source = call.metadata?.source || null;
+
+                if (
+                    callerIsHost &&
+                    source === "screen" &&
+                    mainVideoRef.current
+                ) {
                     try {
                         mainVideoRef.current.srcObject = null;
                     } catch (e) {}
+                    return;
+                }
+
+                if (callerIsHost && source === "camera") {
+                    const el = participantsVideoRefs.current.get(call.peer);
+                    if (el) {
+                        try {
+                            el.srcObject = null;
+                        } catch (e) {}
+                    } else {
+                        pendingStreamsRef.current.delete(call.peer);
+                    }
                     return;
                 }
 
@@ -252,13 +289,15 @@ export default function VideoCall({ videoCall }) {
             // Close any outgoing call to the host (participant -> host)
             if (currentUser.id !== videoCall.host_id && hostPeerIdRef.current) {
                 const hostId = hostPeerIdRef.current;
-                const call = activeCallsRef.current.get(hostId);
-                if (call) {
-                    try {
-                        call.close();
-                    } catch (e) {
-                        console.warn("Error closing call to host:", e);
-                    }
+                const calls = activeCallsRef.current.get(hostId) || [];
+                if (calls.length) {
+                    calls.forEach((c) => {
+                        try {
+                            c.close();
+                        } catch (e) {
+                            console.warn("Error closing call to host:", e);
+                        }
+                    });
                     activeCallsRef.current.delete(hostId);
                     calledPeers.current.delete(hostId);
                 }
@@ -295,14 +334,22 @@ export default function VideoCall({ videoCall }) {
                         streamRef.current
                     );
                     // track this outgoing call so we can close it when camera is turned off
-                    activeCallsRef.current.set(hostId, call);
+                    const arr = activeCallsRef.current.get(hostId) || [];
+                    arr.push(call);
+                    activeCallsRef.current.set(hostId, arr);
                     calledPeers.current.add(hostId);
                     call.on("error", (err) =>
                         console.error("Call error to host:", err)
                     );
                     call.on("close", () => {
-                        activeCallsRef.current.delete(hostId);
-                        calledPeers.current.delete(hostId);
+                        const a = activeCallsRef.current.get(hostId) || [];
+                        const i = a.indexOf(call);
+                        if (i > -1) a.splice(i, 1);
+                        if (a.length) activeCallsRef.current.set(hostId, a);
+                        else {
+                            activeCallsRef.current.delete(hostId);
+                            calledPeers.current.delete(hostId);
+                        }
                     });
                 } catch (err) {
                     console.warn("Error calling host with camera stream:", err);
@@ -347,14 +394,22 @@ export default function VideoCall({ videoCall }) {
                             hostId,
                             streamRef.current
                         );
-                        activeCallsRef.current.set(hostId, call);
+                        const arr = activeCallsRef.current.get(hostId) || [];
+                        arr.push(call);
+                        activeCallsRef.current.set(hostId, arr);
                         calledPeers.current.add(hostId);
                         call.on("error", (err) =>
                             console.error("Call error to host (mic-only):", err)
                         );
                         call.on("close", () => {
-                            activeCallsRef.current.delete(hostId);
-                            calledPeers.current.delete(hostId);
+                            const a = activeCallsRef.current.get(hostId) || [];
+                            const i = a.indexOf(call);
+                            if (i > -1) a.splice(i, 1);
+                            if (a.length) activeCallsRef.current.set(hostId, a);
+                            else {
+                                activeCallsRef.current.delete(hostId);
+                                calledPeers.current.delete(hostId);
+                            }
                         });
                     } catch (err) {
                         console.warn(
@@ -408,7 +463,9 @@ export default function VideoCall({ videoCall }) {
                             hostId,
                             streamRef.current
                         );
-                        activeCallsRef.current.set(hostId, call);
+                        const arr = activeCallsRef.current.get(hostId) || [];
+                        arr.push(call);
+                        activeCallsRef.current.set(hostId, arr);
                         calledPeers.current.add(hostId);
                         call.on("error", (err) =>
                             console.error(
@@ -417,8 +474,14 @@ export default function VideoCall({ videoCall }) {
                             )
                         );
                         call.on("close", () => {
-                            activeCallsRef.current.delete(hostId);
-                            calledPeers.current.delete(hostId);
+                            const a = activeCallsRef.current.get(hostId) || [];
+                            const i = a.indexOf(call);
+                            if (i > -1) a.splice(i, 1);
+                            if (a.length) activeCallsRef.current.set(hostId, a);
+                            else {
+                                activeCallsRef.current.delete(hostId);
+                                calledPeers.current.delete(hostId);
+                            }
                         });
                     } catch (err) {
                         console.warn(
@@ -453,16 +516,18 @@ export default function VideoCall({ videoCall }) {
                     hostPeerIdRef.current
                 ) {
                     const hostId = hostPeerIdRef.current;
-                    const call = activeCallsRef.current.get(hostId);
-                    if (call) {
-                        try {
-                            call.close();
-                        } catch (e) {
-                            console.warn(
-                                "Error closing mic-only call to host:",
-                                e
-                            );
-                        }
+                    const calls = activeCallsRef.current.get(hostId) || [];
+                    if (calls.length) {
+                        calls.forEach((c) => {
+                            try {
+                                c.close();
+                            } catch (e) {
+                                console.warn(
+                                    "Error closing mic-only call to host:",
+                                    e
+                                );
+                            }
+                        });
                         activeCallsRef.current.delete(hostId);
                         calledPeers.current.delete(hostId);
                     }
@@ -534,17 +599,62 @@ export default function VideoCall({ videoCall }) {
                     if (p.user.id !== auth.user.id && p.peer_id) {
                         const call = peerInstance.current.call(
                             p.peer_id,
-                            stream
+                            stream,
+                            { metadata: { source: "screen" } }
                         );
-                        activeCallsRef.current.set(p.peer_id, call);
+                        // store multiple calls per peer
+                        const existing =
+                            activeCallsRef.current.get(p.peer_id) || [];
+                        existing.push(call);
+                        activeCallsRef.current.set(p.peer_id, existing);
                         calledPeers.current.add(p.peer_id);
                         call.on("error", (err) =>
                             console.error("Call error with", p.peer_id, err)
                         );
                         call.on("close", () => {
-                            activeCallsRef.current.delete(p.peer_id);
-                            calledPeers.current.delete(p.peer_id);
+                            const arr =
+                                activeCallsRef.current.get(p.peer_id) || [];
+                            const idx = arr.indexOf(call);
+                            if (idx > -1) arr.splice(idx, 1);
+                            if (arr.length)
+                                activeCallsRef.current.set(p.peer_id, arr);
+                            else {
+                                activeCallsRef.current.delete(p.peer_id);
+                                calledPeers.current.delete(p.peer_id);
+                            }
                         });
+
+                        // also send camera stream (if available) as a separate call so participants can show it in the host card
+                        if (prevStreamRef.current) {
+                            const camCall = peerInstance.current.call(
+                                p.peer_id,
+                                prevStreamRef.current,
+                                { metadata: { source: "camera" } }
+                            );
+                            const ex2 =
+                                activeCallsRef.current.get(p.peer_id) || [];
+                            ex2.push(camCall);
+                            activeCallsRef.current.set(p.peer_id, ex2);
+                            camCall.on("error", (err) =>
+                                console.error(
+                                    "Camera call error with",
+                                    p.peer_id,
+                                    err
+                                )
+                            );
+                            camCall.on("close", () => {
+                                const arr2 =
+                                    activeCallsRef.current.get(p.peer_id) || [];
+                                const idx2 = arr2.indexOf(camCall);
+                                if (idx2 > -1) arr2.splice(idx2, 1);
+                                if (arr2.length)
+                                    activeCallsRef.current.set(p.peer_id, arr2);
+                                else {
+                                    activeCallsRef.current.delete(p.peer_id);
+                                    calledPeers.current.delete(p.peer_id);
+                                }
+                            });
+                        }
                     }
                 });
             }
@@ -568,13 +678,15 @@ export default function VideoCall({ videoCall }) {
             } catch (e) {}
         }
 
-        // Close any active calls from the host's broadcast
-        activeCallsRef.current.forEach((call) => {
-            try {
-                call.close();
-            } catch (e) {
-                console.warn("Error closing call:", e);
-            }
+        // Close any active calls from the host's broadcast (support arrays of calls)
+        activeCallsRef.current.forEach((calls, peerId) => {
+            (calls || []).forEach((call) => {
+                try {
+                    call.close();
+                } catch (e) {
+                    console.warn("Error closing call:", e);
+                }
+            });
         });
         activeCallsRef.current.clear();
         calledPeers.current.clear();
@@ -648,19 +760,56 @@ export default function VideoCall({ videoCall }) {
                 p.peer_id &&
                 !calledPeers.current.has(p.peer_id)
             ) {
+                const source = sharing ? "screen" : "camera";
                 const call = peerInstance.current.call(
                     p.peer_id,
-                    streamRef.current
+                    streamRef.current,
+                    { metadata: { source } }
                 );
-                activeCallsRef.current.set(p.peer_id, call);
+                const arr = activeCallsRef.current.get(p.peer_id) || [];
+                arr.push(call);
+                activeCallsRef.current.set(p.peer_id, arr);
                 calledPeers.current.add(p.peer_id);
                 call.on("error", (err) =>
                     console.error("Call error with", p.peer_id, err)
                 );
                 call.on("close", () => {
-                    activeCallsRef.current.delete(p.peer_id);
-                    calledPeers.current.delete(p.peer_id);
+                    const a = activeCallsRef.current.get(p.peer_id) || [];
+                    const i = a.indexOf(call);
+                    if (i > -1) a.splice(i, 1);
+                    if (a.length) activeCallsRef.current.set(p.peer_id, a);
+                    else {
+                        activeCallsRef.current.delete(p.peer_id);
+                        calledPeers.current.delete(p.peer_id);
+                    }
                 });
+
+                // If we're currently sharing and have a saved camera stream, also send it so participants receive host camera separately
+                if (sharing && prevStreamRef.current) {
+                    const camCall = peerInstance.current.call(
+                        p.peer_id,
+                        prevStreamRef.current,
+                        { metadata: { source: "camera" } }
+                    );
+                    const a2 = activeCallsRef.current.get(p.peer_id) || [];
+                    a2.push(camCall);
+                    activeCallsRef.current.set(p.peer_id, a2);
+                    camCall.on("error", (err) =>
+                        console.error("Camera call error with", p.peer_id, err)
+                    );
+                    camCall.on("close", () => {
+                        const arr2 =
+                            activeCallsRef.current.get(p.peer_id) || [];
+                        const idx2 = arr2.indexOf(camCall);
+                        if (idx2 > -1) arr2.splice(idx2, 1);
+                        if (arr2.length)
+                            activeCallsRef.current.set(p.peer_id, arr2);
+                        else {
+                            activeCallsRef.current.delete(p.peer_id);
+                            calledPeers.current.delete(p.peer_id);
+                        }
+                    });
+                }
             }
         });
     }, [participants]);
