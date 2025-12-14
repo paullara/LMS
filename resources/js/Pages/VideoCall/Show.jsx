@@ -27,6 +27,57 @@ export default function VideoCall({ videoCall }) {
     const pendingStreamsRef = useRef(new Map());
 
     // map of participantPeerId (or fallback id) => DOM video element
+    {
+        /* Reaction overlay */
+    }
+    {
+        (() => {
+            const userKeyForReaction = String(p.user.id);
+            return (
+                <>
+                    {reactionOverlays[userKeyForReaction] && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 pointer-events-none">
+                            <div className="text-3xl animate-pop">
+                                {reactionOverlays[userKeyForReaction]}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Reaction button (open picker) */}
+                    <div className="absolute bottom-2 right-2">
+                        <div className="relative">
+                            <button
+                                onClick={() => openPicker(userKeyForReaction)}
+                                className="p-1 bg-gray-800 rounded-full text-sm hover:bg-gray-700"
+                                title="React"
+                            >
+                                🙂
+                            </button>
+
+                            {/* Picker */}
+                            {pickerOpenFor === userKeyForReaction && (
+                                <div className="absolute bottom-10 right-0 bg-[#121417] border border-gray-700 rounded-md p-2 flex gap-2 shadow-lg">
+                                    {["👍", "❤️", "😂", "👏", "😮"].map(
+                                        (emo) => (
+                                            <button
+                                                key={emo}
+                                                onClick={() =>
+                                                    sendReaction(p.user.id, emo)
+                                                }
+                                                className="text-xl p-1 hover:scale-110 transition"
+                                            >
+                                                {emo}
+                                            </button>
+                                        )
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            );
+        })();
+    }
     const participantsVideoRefs = useRef(new Map());
 
     const [peerId, setPeerId] = useState(null);
@@ -42,6 +93,8 @@ export default function VideoCall({ videoCall }) {
     const [sending, setSending] = useState(false);
     const lastMessageRef = useRef(null);
     const [lastId, setLastId] = useState(null);
+    const [reactionOverlays, setReactionOverlays] = useState({});
+    const [pickerOpenFor, setPickerOpenFor] = useState(null);
 
     // Confirmation modal state
     const [showConfirmation, setShowConfirmation] = useState(false);
@@ -890,15 +943,31 @@ export default function VideoCall({ videoCall }) {
             );
 
             if (res.data.messages.length) {
+                const newMessages = res.data.messages;
                 setMessages((prev) => {
                     const existingIds = new Set(prev.map((m) => m.id));
-                    const newOnes = res.data.messages.filter(
+                    const newOnes = newMessages.filter(
                         (m) => !existingIds.has(m.id)
                     );
+
+                    // process reaction messages (format: __REACTION__|targetUserId|emoji)
+                    newOnes.forEach((m) => {
+                        if (
+                            typeof m.message === "string" &&
+                            m.message.startsWith("__REACTION__|")
+                        ) {
+                            const parts = m.message.split("|");
+                            const targetId = parts[1];
+                            const emoji = parts[2];
+                            if (targetId && emoji)
+                                showReaction(targetId, emoji);
+                        }
+                    });
+
                     return [...prev, ...newOnes];
                 });
 
-                const newest = res.data.messages[res.data.messages.length - 1];
+                const newest = newMessages[newMessages.length - 1];
                 setLastId(newest.id);
             }
         } catch (err) {
@@ -937,6 +1006,38 @@ export default function VideoCall({ videoCall }) {
             console.error("Send failed:", err);
         } finally {
             setSending(false);
+        }
+    };
+
+    // Show a transient reaction overlay on a participant card
+    const showReaction = (targetId, emoji) => {
+        setReactionOverlays((prev) => ({ ...prev, [targetId]: emoji }));
+        // remove after 4s
+        setTimeout(() => {
+            setReactionOverlays((prev) => {
+                const copy = { ...prev };
+                delete copy[targetId];
+                return copy;
+            });
+        }, 4000);
+    };
+
+    // Open picker for a participant
+    const openPicker = (targetUserId) => {
+        setPickerOpenFor(targetUserId);
+    };
+
+    const sendReaction = async (targetUserId, emoji) => {
+        try {
+            await axios.post(`/video-call/${videoCall.id}/messages`, {
+                message: `__REACTION__|${targetUserId}|${emoji}`,
+            });
+            // locally show immediately
+            showReaction(String(targetUserId), emoji);
+        } catch (err) {
+            console.error("Failed to send reaction:", err);
+        } finally {
+            setPickerOpenFor(null);
         }
     };
 
