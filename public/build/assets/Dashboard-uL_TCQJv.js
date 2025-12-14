@@ -1,1 +1,0 @@
-import{j as r}from"./app-CeJ5pVxr.js";import{C as o}from"./Chairman-C57dNW14.js";import"./menu-BTT5mPEj.js";import"./transition-CEUhVjN0.js";import"./createLucideIcon-CL1edUqC.js";import"./NavLink-Dsfe8GZf.js";function e(){return r.jsx(o,{children:r.jsx("h1",{children:"Hello"})})}export{e as default};

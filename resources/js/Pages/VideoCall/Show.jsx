@@ -340,6 +340,79 @@ export default function VideoCall({ videoCall }) {
                 video: true,
                 audio: micOn, // Request audio if mic is already on
             });
+
+            // If the host is currently screen-sharing, we must NOT replace the display
+            // broadcast (`streamRef.current`). Instead store/update the host's camera
+            // stream in `prevStreamRef.current` so screen sharing continues uninterrupted
+            // while still allowing participants to receive the host camera.
+            if (currentUser.id === videoCall.host_id && sharing) {
+                prevStreamRef.current = stream;
+
+                // Update host participant card (if mounted)
+                const userKey = peerId || String(currentUser.id);
+                const el = participantsVideoRefs.current.get(userKey);
+                if (el) {
+                    try {
+                        el.srcObject = prevStreamRef.current;
+                        el.muted = true;
+                        el.play?.().catch(() => {});
+                    } catch (e) {
+                        console.warn(
+                            "Failed to set prev stream on participant element",
+                            e
+                        );
+                    }
+                }
+
+                // Broadcast the host camera stream as a separate call to participants
+                try {
+                    const res = await axios.get(
+                        `/video-call/${videoCall.id}/participants`
+                    );
+                    res.data.participants.forEach((p) => {
+                        if (p.user.id !== auth.user.id && p.peer_id) {
+                            const camCall = peerInstance.current.call(
+                                p.peer_id,
+                                prevStreamRef.current,
+                                { metadata: { source: "camera" } }
+                            );
+                            const ex2 =
+                                activeCallsRef.current.get(p.peer_id) || [];
+                            ex2.push(camCall);
+                            activeCallsRef.current.set(p.peer_id, ex2);
+                            camCall.on("error", (err) =>
+                                console.error(
+                                    "Camera call error with",
+                                    p.peer_id,
+                                    err
+                                )
+                            );
+                            camCall.on("close", () => {
+                                const arr2 =
+                                    activeCallsRef.current.get(p.peer_id) || [];
+                                const idx2 = arr2.indexOf(camCall);
+                                if (idx2 > -1) arr2.splice(idx2, 1);
+                                if (arr2.length)
+                                    activeCallsRef.current.set(p.peer_id, arr2);
+                                else {
+                                    activeCallsRef.current.delete(p.peer_id);
+                                    calledPeers.current.delete(p.peer_id);
+                                }
+                            });
+                        }
+                    });
+                } catch (err) {
+                    console.warn(
+                        "Error broadcasting host camera while sharing:",
+                        err
+                    );
+                }
+
+                setCameraOn(true);
+                return;
+            }
+
+            // Non-host or host not sharing: continue with existing behavior
             streamRef.current = stream;
 
             // Show in participant card for current user (if mounted)
@@ -376,10 +449,16 @@ export default function VideoCall({ videoCall }) {
                     // gather peer ids from participants state (exclude self and nulls)
                     const targetPeerIds = participants
                         .map((p) => p.peer_id)
-                        .filter((id) => id && id !== (peerId || String(currentUser.id)));
+                        .filter(
+                            (id) =>
+                                id && id !== (peerId || String(currentUser.id))
+                        );
 
                     // ensure hostPeerId is included if present
-                    if (hostPeerIdRef.current && !targetPeerIds.includes(hostPeerIdRef.current)) {
+                    if (
+                        hostPeerIdRef.current &&
+                        !targetPeerIds.includes(hostPeerIdRef.current)
+                    ) {
                         targetPeerIds.push(hostPeerIdRef.current);
                     }
 
@@ -393,30 +472,43 @@ export default function VideoCall({ videoCall }) {
                                 { metadata: { source: "camera" } }
                             );
 
-                            const arr = activeCallsRef.current.get(targetId) || [];
+                            const arr =
+                                activeCallsRef.current.get(targetId) || [];
                             arr.push(call);
                             activeCallsRef.current.set(targetId, arr);
                             calledPeers.current.add(targetId);
 
                             call.on("error", (err) =>
-                                console.error("Call error to peer:", targetId, err)
+                                console.error(
+                                    "Call error to peer:",
+                                    targetId,
+                                    err
+                                )
                             );
                             call.on("close", () => {
-                                const a = activeCallsRef.current.get(targetId) || [];
+                                const a =
+                                    activeCallsRef.current.get(targetId) || [];
                                 const i = a.indexOf(call);
                                 if (i > -1) a.splice(i, 1);
-                                if (a.length) activeCallsRef.current.set(targetId, a);
+                                if (a.length)
+                                    activeCallsRef.current.set(targetId, a);
                                 else {
                                     activeCallsRef.current.delete(targetId);
                                     calledPeers.current.delete(targetId);
                                 }
                             });
                         } catch (err) {
-                            console.warn("Error calling peer with camera stream:", err);
+                            console.warn(
+                                "Error calling peer with camera stream:",
+                                err
+                            );
                         }
                     });
                 } catch (err) {
-                    console.warn("Error calling peers with camera stream:", err);
+                    console.warn(
+                        "Error calling peers with camera stream:",
+                        err
+                    );
                 }
             }
         } catch (err) {
@@ -431,6 +523,80 @@ export default function VideoCall({ videoCall }) {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: true,
                 });
+                // If host is currently sharing, keep this audio as part of prevStreamRef
+                if (currentUser.id === videoCall.host_id && sharing) {
+                    prevStreamRef.current = stream;
+
+                    // attach mic to host participant card
+                    const userKey = peerId || String(currentUser.id);
+                    const el = participantsVideoRefs.current.get(userKey);
+                    if (el) {
+                        try {
+                            el.srcObject = prevStreamRef.current;
+                            el.muted = true;
+                            el.play?.().catch(() => {});
+                        } catch (e) {
+                            console.warn(
+                                "Failed to set prev audio stream on participant element",
+                                e
+                            );
+                        }
+                    }
+
+                    // Broadcast the audio (as host camera stream) to participants so they receive host audio
+                    try {
+                        const res = await axios.get(
+                            `/video-call/${videoCall.id}/participants`
+                        );
+                        res.data.participants.forEach((p) => {
+                            if (p.user.id !== auth.user.id && p.peer_id) {
+                                const call = peerInstance.current.call(
+                                    p.peer_id,
+                                    prevStreamRef.current,
+                                    { metadata: { source: "camera" } }
+                                );
+                                const arr =
+                                    activeCallsRef.current.get(p.peer_id) || [];
+                                arr.push(call);
+                                activeCallsRef.current.set(p.peer_id, arr);
+                                call.on("error", (err) =>
+                                    console.error(
+                                        "Call error with",
+                                        p.peer_id,
+                                        err
+                                    )
+                                );
+                                call.on("close", () => {
+                                    const a =
+                                        activeCallsRef.current.get(p.peer_id) ||
+                                        [];
+                                    const i = a.indexOf(call);
+                                    if (i > -1) a.splice(i, 1);
+                                    if (a.length)
+                                        activeCallsRef.current.set(
+                                            p.peer_id,
+                                            a
+                                        );
+                                    else {
+                                        activeCallsRef.current.delete(
+                                            p.peer_id
+                                        );
+                                        calledPeers.current.delete(p.peer_id);
+                                    }
+                                });
+                            }
+                        });
+                    } catch (err) {
+                        console.warn(
+                            "Error broadcasting host mic while sharing:",
+                            err
+                        );
+                    }
+
+                    setMicOn(true);
+                    return;
+                }
+
                 streamRef.current = stream;
 
                 // attach mic to participant card if exists (local user)
@@ -463,7 +629,9 @@ export default function VideoCall({ videoCall }) {
                         const targetPeerIds = participants
                             .map((p) => p.peer_id)
                             .filter(
-                                (id) => id && id !== (peerId || String(currentUser.id))
+                                (id) =>
+                                    id &&
+                                    id !== (peerId || String(currentUser.id))
                             );
                         if (
                             hostPeerIdRef.current &&
@@ -471,7 +639,9 @@ export default function VideoCall({ videoCall }) {
                         )
                             targetPeerIds.push(hostPeerIdRef.current);
 
-                        const uniqueTargets = Array.from(new Set(targetPeerIds));
+                        const uniqueTargets = Array.from(
+                            new Set(targetPeerIds)
+                        );
 
                         uniqueTargets.forEach((targetId) => {
                             try {
@@ -480,15 +650,21 @@ export default function VideoCall({ videoCall }) {
                                     streamRef.current,
                                     { metadata: { source: "camera" } }
                                 );
-                                const arr = activeCallsRef.current.get(targetId) || [];
+                                const arr =
+                                    activeCallsRef.current.get(targetId) || [];
                                 arr.push(call);
                                 activeCallsRef.current.set(targetId, arr);
                                 calledPeers.current.add(targetId);
                                 call.on("error", (err) =>
-                                    console.error("Call error to peer (mic-only):", err)
+                                    console.error(
+                                        "Call error to peer (mic-only):",
+                                        err
+                                    )
                                 );
                                 call.on("close", () => {
-                                    const a = activeCallsRef.current.get(targetId) || [];
+                                    const a =
+                                        activeCallsRef.current.get(targetId) ||
+                                        [];
                                     const i = a.indexOf(call);
                                     if (i > -1) a.splice(i, 1);
                                     if (a.length)
@@ -499,11 +675,17 @@ export default function VideoCall({ videoCall }) {
                                     }
                                 });
                             } catch (err) {
-                                console.warn("Error calling peer with mic-only stream:", err);
+                                console.warn(
+                                    "Error calling peer with mic-only stream:",
+                                    err
+                                );
                             }
                         });
                     } catch (err) {
-                        console.warn("Error calling peers with mic-only stream:", err);
+                        console.warn(
+                            "Error calling peers with mic-only stream:",
+                            err
+                        );
                     }
                 }
             } catch (err) {
@@ -519,6 +701,87 @@ export default function VideoCall({ videoCall }) {
                     video: true,
                     audio: true,
                 });
+                // If host is sharing, update prevStreamRef instead of replacing display stream
+                if (currentUser.id === videoCall.host_id && sharing) {
+                    // stop any existing prev stream tracks
+                    if (prevStreamRef.current) {
+                        try {
+                            prevStreamRef.current
+                                .getTracks()
+                                .forEach((t) => t.stop());
+                        } catch (e) {}
+                    }
+                    prevStreamRef.current = newStream;
+
+                    // Update participant card
+                    const userKey = peerId || String(currentUser.id);
+                    const el = participantsVideoRefs.current.get(userKey);
+                    if (el) {
+                        try {
+                            el.srcObject = prevStreamRef.current;
+                            el.muted = true;
+                            el.play?.().catch(() => {});
+                        } catch (e) {
+                            console.warn(
+                                "Error setting prevStream on participant after adding mic",
+                                e
+                            );
+                        }
+                    }
+
+                    // Broadcast updated camera+mic to participants
+                    try {
+                        const res = await axios.get(
+                            `/video-call/${videoCall.id}/participants`
+                        );
+                        res.data.participants.forEach((p) => {
+                            if (p.user.id !== auth.user.id && p.peer_id) {
+                                const camCall = peerInstance.current.call(
+                                    p.peer_id,
+                                    prevStreamRef.current,
+                                    { metadata: { source: "camera" } }
+                                );
+                                const ex2 =
+                                    activeCallsRef.current.get(p.peer_id) || [];
+                                ex2.push(camCall);
+                                activeCallsRef.current.set(p.peer_id, ex2);
+                                camCall.on("error", (err) =>
+                                    console.error(
+                                        "Camera call error with",
+                                        p.peer_id,
+                                        err
+                                    )
+                                );
+                                camCall.on("close", () => {
+                                    const arr2 =
+                                        activeCallsRef.current.get(p.peer_id) ||
+                                        [];
+                                    const idx2 = arr2.indexOf(camCall);
+                                    if (idx2 > -1) arr2.splice(idx2, 1);
+                                    if (arr2.length)
+                                        activeCallsRef.current.set(
+                                            p.peer_id,
+                                            arr2
+                                        );
+                                    else {
+                                        activeCallsRef.current.delete(
+                                            p.peer_id
+                                        );
+                                        calledPeers.current.delete(p.peer_id);
+                                    }
+                                });
+                            }
+                        });
+                    } catch (err) {
+                        console.warn(
+                            "Error broadcasting updated host camera+mic while sharing:",
+                            err
+                        );
+                    }
+
+                    setMicOn(true);
+                    return;
+                }
 
                 // Stop old stream and replace with new one
                 if (streamRef.current) {
@@ -555,7 +818,9 @@ export default function VideoCall({ videoCall }) {
                         const targetPeerIds = participants
                             .map((p) => p.peer_id)
                             .filter(
-                                (id) => id && id !== (peerId || String(currentUser.id))
+                                (id) =>
+                                    id &&
+                                    id !== (peerId || String(currentUser.id))
                             );
                         if (
                             hostPeerIdRef.current &&
@@ -563,7 +828,9 @@ export default function VideoCall({ videoCall }) {
                         )
                             targetPeerIds.push(hostPeerIdRef.current);
 
-                        const uniqueTargets = Array.from(new Set(targetPeerIds));
+                        const uniqueTargets = Array.from(
+                            new Set(targetPeerIds)
+                        );
 
                         uniqueTargets.forEach((targetId) => {
                             try {
@@ -572,7 +839,8 @@ export default function VideoCall({ videoCall }) {
                                     streamRef.current,
                                     { metadata: { source: "camera" } }
                                 );
-                                const arr = activeCallsRef.current.get(targetId) || [];
+                                const arr =
+                                    activeCallsRef.current.get(targetId) || [];
                                 arr.push(call);
                                 activeCallsRef.current.set(targetId, arr);
                                 calledPeers.current.add(targetId);
@@ -583,7 +851,9 @@ export default function VideoCall({ videoCall }) {
                                     )
                                 );
                                 call.on("close", () => {
-                                    const a = activeCallsRef.current.get(targetId) || [];
+                                    const a =
+                                        activeCallsRef.current.get(targetId) ||
+                                        [];
                                     const i = a.indexOf(call);
                                     if (i > -1) a.splice(i, 1);
                                     if (a.length)
@@ -594,11 +864,17 @@ export default function VideoCall({ videoCall }) {
                                     }
                                 });
                             } catch (err) {
-                                console.warn("Error calling peer with camera+mic stream:", err);
+                                console.warn(
+                                    "Error calling peer with camera+mic stream:",
+                                    err
+                                );
                             }
                         });
                     } catch (err) {
-                        console.warn("Error calling peers with camera+mic stream:", err);
+                        console.warn(
+                            "Error calling peers with camera+mic stream:",
+                            err
+                        );
                     }
                 }
             } catch (err) {
@@ -608,23 +884,26 @@ export default function VideoCall({ videoCall }) {
         }
 
         // Mic is on; toggle audio tracks
-        if (streamRef.current) {
-            const hasAudioTracks = streamRef.current
+        if (streamRef.current || prevStreamRef.current) {
+            const targetStream =
+                (currentUser.id === videoCall.host_id &&
+                    sharing &&
+                    prevStreamRef.current) ||
+                streamRef.current;
+
+            const hasAudioTracks = targetStream
                 .getTracks()
                 .some((t) => t.kind === "audio");
 
             if (hasAudioTracks) {
                 // Disable audio tracks
-                streamRef.current.getTracks().forEach((track) => {
+                targetStream.getTracks().forEach((track) => {
                     if (track.kind === "audio") track.enabled = false;
                 });
                 setMicOn(false);
 
                 // If there is no camera active and we're a participant, close outgoing call to host
-                if (
-                    !cameraOn &&
-                    currentUser.id !== videoCall.host_id
-                ) {
+                if (!cameraOn && currentUser.id !== videoCall.host_id) {
                     try {
                         activeCallsRef.current.forEach((calls, pid) => {
                             (calls || []).forEach((c) => {
@@ -646,7 +925,10 @@ export default function VideoCall({ videoCall }) {
 
                     // Stop and clear audio-only stream
                     try {
-                        streamRef.current.getTracks().forEach((t) => t.stop());
+                        if (streamRef.current)
+                            streamRef.current
+                                .getTracks()
+                                .forEach((t) => t.stop());
                     } catch (e) {}
                     streamRef.current = null;
                 }
@@ -657,12 +939,52 @@ export default function VideoCall({ videoCall }) {
                         await navigator.mediaDevices.getUserMedia({
                             audio: true,
                         });
-                    audioStream.getTracks().forEach((track) => {
-                        if (track.kind === "audio") {
-                            streamRef.current.addTrack(track);
+
+                    // If host is sharing, add audio to prevStreamRef so display stream isn't touched
+                    if (currentUser.id === videoCall.host_id && sharing) {
+                        if (!prevStreamRef.current) {
+                            prevStreamRef.current = new MediaStream();
                         }
-                    });
-                    setMicOn(true);
+                        audioStream.getTracks().forEach((track) => {
+                            if (track.kind === "audio") {
+                                prevStreamRef.current.addTrack(track);
+                            }
+                        });
+
+                        // Broadcast updated audio on prevStream to participants
+                        try {
+                            const res = await axios.get(
+                                `/video-call/${videoCall.id}/participants`
+                            );
+                            res.data.participants.forEach((p) => {
+                                if (p.user.id !== auth.user.id && p.peer_id) {
+                                    const call = peerInstance.current.call(
+                                        p.peer_id,
+                                        prevStreamRef.current,
+                                        { metadata: { source: "camera" } }
+                                    );
+                                    const arr =
+                                        activeCallsRef.current.get(p.peer_id) ||
+                                        [];
+                                    arr.push(call);
+                                    activeCallsRef.current.set(p.peer_id, arr);
+                                }
+                            });
+                        } catch (err) {
+                            console.warn(
+                                "Error broadcasting audio while sharing:",
+                                err
+                            );
+                        }
+                        setMicOn(true);
+                    } else {
+                        audioStream.getTracks().forEach((track) => {
+                            if (track.kind === "audio") {
+                                streamRef.current.addTrack(track);
+                            }
+                        });
+                        setMicOn(true);
+                    }
                 } catch (err) {
                     console.error("Failed to add audio track:", err);
                 }
