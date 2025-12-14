@@ -1467,7 +1467,7 @@ export default function VideoCall({ videoCall }) {
 
                                         {/* Reaction overlay (transient) */}
                                         {overlayEmoji && (
-                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
                                                 <div className="text-4xl animate-bounce">
                                                     {overlayEmoji}
                                                 </div>
@@ -1524,7 +1524,7 @@ export default function VideoCall({ videoCall }) {
                                         )}
 
                                         {/* Fallback avatar + name overlay (will show even if video blank) */}
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
                                             <img
                                                 src={`/${p.user.profile_picture}`}
                                                 className="w-12 h-12 rounded-full border border-gray-600 mb-1"
