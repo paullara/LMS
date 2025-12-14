@@ -153,7 +153,7 @@ Route::post('/classroom/{id}/threads', [ThreadController::class, 'storeThreads']
 Route::post('/thread/{thread}/reply', [InstructorController::class, 'storeReply'])->name('thread.reply');
 Route::post('/threads/{thread}/replies', [ThreadController::class, 'storeThreadReply']);
 Route::post('/replies', [ThreadController::class, 'storeReply']);
-Route::get('/submissions/quiz', [QuizController::class, 'submissions']);
+// Route::get('/submissions/quiz', [QuizController::class, 'submissions']);
 Route::get('/instructors/json', [DashboardController::class, 'getInstructor']);
 Route::get('/students/json', [DashboardController::class, 'getStudents']);
 Route::get('/classes/json', [DashboardController::class, 'getClasses']);
@@ -187,9 +187,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/student/test/profile', [StudentController::class, 'testProfile'])->name('student.test.profile');
     Route::post('/classes/{class}/quizzes', [QuizController::class, 'store']);
     Route::get('/classes/{class}/quizzes', [QuizController::class, 'index']);
+    Route::get('/student/quizzes/{classId}', [QuizController::class, 'studentIndex']);
     Route::get('/quizzes/{quiz}', [QuizController::class, 'show']);
     Route::post('/quizzes/{quiz}/submit', [QuizSubmissionController::class, 'store']);
     Route::post('/submissions/{submission}/grade-essay', [QuizGradingController::class, 'gradeEssay']);
+    Route::post('/submissions/{submission}/finalize', [QuizSubmissionController::class, 'finalize']);
+    Route::post('/submissions/{quiz}/return', [QuizController::class, 'returnToStudent']);
+    Route::get('/classes/{classId}/returned-quizzes', [QuizController::class, 'returnedQuiz']);
+
 });
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('redirect.google');

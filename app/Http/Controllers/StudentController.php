@@ -258,50 +258,51 @@ class StudentController extends Controller
     }
 
     public function testProfile()
-    {
-        $student = Auth::user();
-        $classes = $student->enrolledClasses()->with('instructor')->get();
-        $classIds = $student->enrolledClasses()->pluck('classes.id');
+{
+    $student = Auth::user();
+    $classes = $student->enrolledClasses()->with('instructor')->get();
+    $classIds = $student->enrolledClasses()->pluck('classes.id');
 
-        if ($student->role !== "student") {
-            abort (403, 'Unauthorized');
-        }
-
-        // upcoming
-        $assignmentItems = Assignment::whereIn('class_id', $classIds)
-            ->where('due_date', '>', now())
-            ->orderBy('due_date', 'asc')
-            ->get()
-            ->map(function($a) {
-                return [
-                    'type' => 'assignment',
-                    'title' => $a->title,
-                    'deadline' => $a->due_date,
-                    'class_id' => $a->class_id,
-                ];
-            });
-        
-        $quizItems = Quiz::whereIn('class_id', $classIds)
-            ->where('end_time', '>', now())
-            ->orderBy('end_time', 'asc')
-            ->get()
-            ->map(function ($q) {
-                return [
-                    'type' => 'quiz',
-                    'title' => $q->title,
-                    'deadline' => $q->end_time,
-                    'class_id' => $q->class_id,
-                ];
-            });
-
-        $upcoming = $assignmentItems
-            ->merge($quizItems)
-            ->sortBy('deadline')
-            ->values();
-
-        return Inertia::render('TestProfile', [
-            'classes' => $classes,
-            'upcoming' => $upcoming,
-        ]);
+    if ($student->role !== "student") {
+        abort(403, 'Unauthorized');
     }
+
+    // Upcoming assignments (still fetch all)
+    $assignmentItems = Assignment::whereIn('class_id', $classIds)
+        ->where('due_date', '>', now())
+        ->orderBy('due_date', 'asc')
+        ->get();
+
+    // Fetch quizzes that student hasn't submitted yet
+    $quizItems = Quiz::whereIn('class_id', $classIds)
+        ->where('ends_at', '>', now())
+        ->whereDoesntHave('submissions', function ($query) use ($student) {
+            $query->where('student_id', $student->id);
+        })
+        ->orderBy('ends_at', 'asc')
+        ->get();
+
+    // Merge and map upcoming items
+    $upcoming = $assignmentItems
+        ->merge($quizItems)
+        ->sortBy(function ($item) {
+            return $item->due_date ?? $item->ends_at;
+        })
+        ->values()
+        ->map(function ($item) {
+            return [
+                'type' => $item instanceof Assignment ? 'assignment' : 'quiz',
+                'title' => $item->title,
+                'description' => $item->description,
+                'deadline' => $item->due_date ?? $item->ends_at,
+                'class_id' => $item->class_id,
+            ];
+        });
+
+    return Inertia::render('TestProfile', [
+        'classes' => $classes,
+        'upcoming' => $upcoming,
+    ]);
+}
+
 }

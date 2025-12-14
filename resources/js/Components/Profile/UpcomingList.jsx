@@ -10,7 +10,10 @@ export default function UpcomingList({ upcoming }) {
                     className="p-3 border rounded-md bg-white shadow-sm"
                 >
                     <h2 className="font-semibold">{item.title}</h2>
-                    <p className="text-sm text-gray-600">{item.type}</p>
+                    <h2 className="font-semibold">{item.description}</h2>
+                    <p className="text-sm text-gray-600">
+                        {item.type[0].toUpperCase() + item.type.slice(1)}
+                    </p>
                     <p className="text-sm text-gray-800">
                         Due: {new Date(item.deadline).toLocaleString()}
                     </p>

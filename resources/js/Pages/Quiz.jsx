@@ -1,325 +1,292 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-export default function Quiz({ classId }) {
-    const [quizList, setQuizList] = useState([]);
+export default function StudentQuiz({ classId }) {
+    const [quizzes, setQuizzes] = useState([]);
     const [selectedQuiz, setSelectedQuiz] = useState(null);
     const [studentAnswers, setStudentAnswers] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [returnedQuizzes, setReturnedQuizzes] = useState([]);
+
+    // Timer states
     const [timeLeft, setTimeLeft] = useState(null);
-    const [quizSubmissions, setQuizSubmissions] = useState([]);
-    const [finishedQuizIds, setFinishQuizIds] = useState([]);
+    const [timeUp, setTimeUp] = useState(false);
+    const [showReturned, setShowReturned] = useState(false);
+
+    useEffect(() => {
+        const fetchReturnedQuizzes = async () => {
+            try {
+                const res = await axios.get(
+                    `/classes/${classId}/returned-quizzes`
+                );
+                setReturnedQuizzes(Array.isArray(res.data) ? res.data : []);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        if (classId) fetchReturnedQuizzes();
+    }, [classId]);
 
     // Fetch quizzes
     useEffect(() => {
         const fetchQuizzes = async () => {
             try {
-                const res = await axios.get(`/quizzes/${classId}`);
-                setQuizList(res.data.quizzes);
+                setLoading(true);
+                setError(null);
+
+                const res = await axios.get(`/student/quizzes/${classId}`);
+                setQuizzes(Array.isArray(res.data) ? res.data : []);
             } catch (err) {
-                console.error("Error fetching quizzes", err);
+                console.error(err);
+                setError("Failed to fetch quizzes.");
+            } finally {
+                setLoading(false);
             }
         };
-        fetchQuizzes();
+
+        if (classId) fetchQuizzes();
     }, [classId]);
 
-    // Fetch submissions
-    useEffect(() => {
-        const fetchQuizSubmission = async () => {
-            try {
-                const res = await axios.get("/submissions/quiz");
-                setQuizSubmissions(res.data.quizSubmissions);
-            } catch (error) {
-                console.error("Error fetching submissions", error);
-            }
-        };
-
-        fetchQuizSubmission();
-        const interval = setInterval(fetchQuizSubmission, 2000);
-        return () => clearInterval(interval);
-    }, []);
-
-    // Update finished quiz IDs
-    useEffect(() => {
-        const finishedIds = quizSubmissions
-            .filter((sub) => sub.status === "finished" && sub.quiz_id)
-            .map((sub) => sub.quiz_id);
-        setFinishQuizIds(finishedIds);
-    }, [quizSubmissions]);
-
-    // Handle opening quiz with persistent timer
+    // Open quiz safely and initialize timer
     const handleOpenQuiz = (quiz) => {
         setSelectedQuiz(quiz);
 
-        const quizKey = `quiz_${quiz.id}_timer`;
-        const savedData = JSON.parse(localStorage.getItem(quizKey));
-
         // Initialize answers
         const initialAnswers = {};
-        quiz.questions.forEach((q) => {
-            initialAnswers[q.id] = "";
-        });
+        if (Array.isArray(quiz.questions)) {
+            quiz.questions.forEach((q) => {
+                initialAnswers[q.id] = "";
+            });
+        }
         setStudentAnswers(initialAnswers);
 
-        const duration = quiz.duration_minutes * 60;
-        let remainingTime = duration;
+        // Initialize timer
+        const now = new Date().getTime();
+        const endsAt = new Date(quiz.ends_at).getTime();
+        const remaining = Math.max(0, Math.floor((endsAt - now) / 1000));
 
-        if (savedData && savedData.startTime) {
-            const elapsed = Math.floor(
-                (Date.now() - savedData.startTime) / 1000
-            );
-            remainingTime = Math.max(duration - elapsed, 0);
-        } else {
-            localStorage.setItem(
-                quizKey,
-                JSON.stringify({ startTime: Date.now() })
-            );
-        }
-
-        setTimeLeft(remainingTime);
+        setTimeLeft(remaining);
+        setTimeUp(remaining === 0);
     };
 
-    // Timer countdown with localStorage sync
+    // Countdown timer
     useEffect(() => {
-        if (!selectedQuiz || timeLeft === null) return;
+        if (!selectedQuiz || timeUp || timeLeft === null) return;
 
-        if (timeLeft <= 0) {
-            handleSubmitAnswers(selectedQuiz.id);
-            return;
-        }
+        const interval = setInterval(() => {
+            const now = new Date().getTime();
+            const endsAt = new Date(selectedQuiz.ends_at).getTime();
+            const remaining = Math.max(0, Math.floor((endsAt - now) / 1000));
 
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                const newTime = prev - 1;
-                if (newTime <= 0) {
-                    clearInterval(timer);
-                    handleSubmitAnswers(selectedQuiz.id);
-                }
-                return newTime;
-            });
+            setTimeLeft(remaining);
+
+            if (remaining === 0) {
+                clearInterval(interval);
+                setTimeUp(true);
+                handleSubmit(); // auto-submit
+            }
         }, 1000);
 
-        return () => clearInterval(timer);
-    }, [selectedQuiz, timeLeft]);
+        return () => clearInterval(interval);
+    }, [selectedQuiz, timeUp]);
 
-    // Format timer
-    const formatTime = (seconds) => {
-        const m = Math.floor(seconds / 60)
-            .toString()
-            .padStart(2, "0");
-        const s = (seconds % 60).toString().padStart(2, "0");
-        return `${m}:${s}`;
-    };
-
-    // Select choice
-    const handleSelectChoice = (questionId, choiceLabel) => {
+    const handleAnswer = (questionId, value) => {
         setStudentAnswers((prev) => ({
             ...prev,
-            [questionId]: choiceLabel,
+            [questionId]: value,
         }));
     };
 
-    // Submit answers
-    const handleSubmitAnswers = async (quizId) => {
+    const handleSubmit = async () => {
+        if (!selectedQuiz) return;
+
         try {
-            await axios.post(`/quizzes/${quizId}/submit`, {
+            await axios.post(`/quizzes/${selectedQuiz.id}/submit`, {
                 answers: studentAnswers,
             });
-
-            localStorage.removeItem(`quiz_${quizId}_timer`);
             alert("Quiz submitted successfully!");
             setSelectedQuiz(null);
             setStudentAnswers({});
             setTimeLeft(null);
+            setTimeUp(false);
         } catch (err) {
-            console.error(
-                "Submission failed:",
-                err.response?.data || err.message
-            );
+            console.error(err.response?.data || err.message);
+            alert("Failed to submit quiz.");
         }
     };
 
-    return (
-        <div className="flex flex-col md:flex-row gap-6 w-full max-w-6xl mx-auto p-6">
-            <div className="md:w-1/3 bg-white rounded-2xl shadow-lg p-6 border border-gray-100 overflow-y-auto max-h-[85vh]">
-                <h2 className="text-xl font-bold mb-4 text-purple-700">
-                    Available Quizzes
-                </h2>
-                {quizList.length === 0 ? (
-                    <p className="text-gray-500 text-sm">
-                        No quizzes available.
-                    </p>
-                ) : (
-                    <ul className="space-y-4">
-                        {quizList.map((quiz) => {
-                            const isFinished = finishedQuizIds.includes(
-                                quiz.id
-                            );
-                            const now = new Date();
-                            const quizEndTime = new Date(quiz.end_time);
-                            const isExpired = now > quizEndTime;
+    if (loading) return <p>Loading quizzes...</p>;
+    if (error) return <p className="text-red-500">{error}</p>;
 
-                            return (
-                                <li
+    // Quiz list view
+    if (!selectedQuiz) {
+        return (
+            <div className="space-y-4">
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={() => setShowReturned(!showReturned)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                        {showReturned
+                            ? "Hide Returned Quizzes"
+                            : "Show Returned Quizzes"}
+                    </button>
+                </div>
+                {showReturned && (
+                    <div className="mt-8">
+                        <h2 className="text-xl font-bold mb-4">
+                            Returned Quizzes
+                        </h2>
+                        <div className="space-y-4">
+                            {returnedQuizzes.map((quiz) => (
+                                <div
                                     key={quiz.id}
-                                    className={`p-4 rounded-xl border shadow-sm transition ${
-                                        isFinished
-                                            ? "bg-gray-100 border-gray-200"
-                                            : "bg-white hover:shadow-md"
-                                    }`}
+                                    className="p-4 border rounded bg-green-50 cursor-pointer hover:bg-green-100"
+                                    onClick={() => handleOpenReturnedQuiz(quiz)}
                                 >
-                                    <h3 className="font-semibold text-purple-700 text-lg">
+                                    <h3 className="font-semibold">
                                         {quiz.title}
                                     </h3>
-                                    <p className="text-gray-500 text-sm mb-2">
-                                        {quiz.description}
+                                    <p className="text-gray-500 text-sm">
+                                        Returned at:{" "}
+                                        {new Date(
+                                            quiz.returned_at
+                                        ).toLocaleString()}
                                     </p>
-
-                                    <button
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium text-white ${
-                                            isFinished || isExpired
-                                                ? "bg-gray-400 cursor-not-allowed"
-                                                : "bg-blue-500 hover:bg-blue-600"
-                                        }`}
-                                        onClick={() => handleOpenQuiz(quiz)}
-                                        disabled={isFinished || isExpired}
-                                    >
-                                        {isFinished
-                                            ? "Finished"
-                                            : isExpired
-                                            ? "Expired"
-                                            : "Open Quiz"}
-                                    </button>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                )}
-            </div>
-
-            {/* RIGHT: Quiz Answer Area */}
-            <div className="md:w-2/3 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-                {!selectedQuiz ? (
-                    <div className="text-center text-gray-500">
-                        <p>Select a quiz to begin.</p>
-                    </div>
-                ) : (
-                    <>
-                        <div className="flex justify-between items-center mb-6 border-b pb-3">
-                            <h2 className="text-2xl font-bold text-purple-700">
-                                {selectedQuiz.title}
-                            </h2>
-                            {timeLeft !== null && (
-                                <div className="text-red-600 font-semibold bg-red-100 rounded-lg px-4 py-2">
-                                    ⏳ {formatTime(timeLeft)}
-                                </div>
-                            )}
-                        </div>
-
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                handleSubmitAnswers(selectedQuiz.id);
-                            }}
-                            className="space-y-6"
-                        >
-                            {selectedQuiz.questions.map((question, idx) => (
-                                <div
-                                    key={question.id}
-                                    className="border rounded-lg p-4 bg-gray-50 shadow-sm"
-                                >
-                                    <p className="font-medium text-gray-800 mb-3">
-                                        {idx + 1}. {question.question_text}
-                                    </p>
-
-                                    <div className="space-y-2">
-                                        {question.type === "multiple_choice" &&
-                                            question.choices.map((choice) => (
-                                                <label
-                                                    key={choice.label}
-                                                    className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-gray-100 transition"
-                                                >
-                                                    <input
-                                                        type="radio"
-                                                        name={`question_${question.id}`}
-                                                        value={choice.label}
-                                                        checked={
-                                                            studentAnswers[
-                                                                question.id
-                                                            ] === choice.label
-                                                        }
-                                                        onChange={() =>
-                                                            handleSelectChoice(
-                                                                question.id,
-                                                                choice.label
-                                                            )
-                                                        }
-                                                        className="text-purple-600 focus:ring-purple-500"
-                                                    />
-                                                    <span className="text-gray-700">
-                                                        <span className="font-semibold">
-                                                            {choice.label}.
-                                                        </span>{" "}
-                                                        {choice.text}
-                                                    </span>
-                                                </label>
-                                            ))}
-
-                                        {question.type === "identification" && (
-                                            <input
-                                                type="text"
-                                                value={
-                                                    studentAnswers[
-                                                        question.id
-                                                    ] || ""
-                                                }
-                                                onChange={(e) =>
-                                                    setStudentAnswers(
-                                                        (prev) => ({
-                                                            ...prev,
-                                                            [question.id]:
-                                                                e.target.value,
-                                                        })
-                                                    )
-                                                }
-                                                className="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                placeholder="Type your answer"
-                                            />
-                                        )}
-
-                                        {question.type === "essay" && (
-                                            <textarea
-                                                value={
-                                                    studentAnswers[
-                                                        question.id
-                                                    ] || ""
-                                                }
-                                                onChange={(e) =>
-                                                    setStudentAnswers(
-                                                        (prev) => ({
-                                                            ...prev,
-                                                            [question.id]:
-                                                                e.target.value,
-                                                        })
-                                                    )
-                                                }
-                                                className="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                placeholder="Write your essay answer"
-                                            />
-                                        )}
-                                    </div>
+                                    {quiz.score !== null && (
+                                        <p className="text-sm text-green-700">
+                                            Score: {quiz.score} /{" "}
+                                            {quiz.max_score}
+                                        </p>
+                                    )}
                                 </div>
                             ))}
-
-                            <button
-                                type="submit"
-                                className="w-full py-3 rounded-lg font-semibold bg-green-600 hover:bg-green-700 text-white shadow"
-                            >
-                                Submit Quiz
-                            </button>
-                        </form>
-                    </>
+                        </div>
+                    </div>
                 )}
+
+                {quizzes.length === 0 && <p>No quizzes available.</p>}
+                {quizzes.map((quiz) => (
+                    <div
+                        key={quiz.id}
+                        className={`p-4 border rounded shadow cursor-pointer ${
+                            quiz.submitted
+                                ? "bg-gray-100 cursor-not-allowed"
+                                : "hover:shadow-md"
+                        }`}
+                        onClick={() => !quiz.submitted && handleOpenQuiz(quiz)}
+                    >
+                        <h3 className="font-semibold text-lg">{quiz.title}</h3>
+                        <p className="text-gray-500 text-sm">
+                            {quiz.description || "No description available."}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                            {quiz.submitted
+                                ? "Already Submitted"
+                                : "Not Submitted"}
+                        </p>
+                    </div>
+                ))}
             </div>
+        );
+    }
+    // Selected quiz view
+    return (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold">{selectedQuiz.title}</h2>
+
+            {/* Timer */}
+            <div className="text-right font-semibold text-red-600">
+                {timeUp
+                    ? "Time's up!"
+                    : `Time Left: ${Math.floor(timeLeft / 60)}:${String(
+                          timeLeft % 60
+                      ).padStart(2, "0")}`}
+            </div>
+
+            {Array.isArray(selectedQuiz.questions) &&
+                selectedQuiz.questions.map((q, idx) => (
+                    <div key={q.id} className="border rounded p-4 bg-gray-50">
+                        <p className="font-medium mb-2">
+                            {idx + 1}. {q.question_text}
+                        </p>
+
+                        {/* Multiple Choice */}
+                        {q.type === "mcq" &&
+                            Array.isArray(q.choices) &&
+                            q.choices.map((choice) => (
+                                <label
+                                    key={choice.id}
+                                    className="flex items-center gap-2"
+                                >
+                                    <input
+                                        type="radio"
+                                        name={`question_${q.id}`}
+                                        value={choice.choice_text}
+                                        checked={
+                                            studentAnswers[q.id] ===
+                                            choice.choice_text
+                                        }
+                                        onChange={() =>
+                                            handleAnswer(
+                                                q.id,
+                                                choice.choice_text
+                                            )
+                                        }
+                                        className="text-purple-600"
+                                        disabled={timeUp}
+                                    />
+                                    <span>{choice.choice_text}</span>
+                                </label>
+                            ))}
+
+                        {/* Identification */}
+                        {q.type === "identification" && (
+                            <input
+                                type="text"
+                                value={studentAnswers[q.id] || ""}
+                                onChange={(e) =>
+                                    handleAnswer(q.id, e.target.value)
+                                }
+                                className="w-full border rounded p-2"
+                                placeholder="Type your answer"
+                                disabled={timeUp}
+                            />
+                        )}
+
+                        {/* Essay */}
+                        {q.type === "essay" && (
+                            <textarea
+                                value={studentAnswers[q.id] || ""}
+                                onChange={(e) =>
+                                    handleAnswer(q.id, e.target.value)
+                                }
+                                className="w-full border rounded p-2"
+                                placeholder="Write your essay answer"
+                                disabled={timeUp}
+                            />
+                        )}
+                    </div>
+                ))}
+
+            <button
+                onClick={handleSubmit}
+                disabled={timeUp}
+                className={`w-full py-3 rounded-lg text-white ${
+                    timeUp ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
+                }`}
+            >
+                Submit Quiz
+            </button>
+
+            <button
+                onClick={() => setSelectedQuiz(null)}
+                className="w-full py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+            >
+                Back to Quizzes
+            </button>
         </div>
     );
 }
