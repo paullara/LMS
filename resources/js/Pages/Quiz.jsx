@@ -7,286 +7,320 @@ export default function StudentQuiz({ classId }) {
     const [studentAnswers, setStudentAnswers] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [returnedQuizzes, setReturnedQuizzes] = useState([]);
 
-    // Timer states
     const [timeLeft, setTimeLeft] = useState(null);
     const [timeUp, setTimeUp] = useState(false);
-    const [showReturned, setShowReturned] = useState(false);
 
+    const [activeTab, setActiveTab] = useState("available");
+    // available | ended | submitted
+
+    /* =========================
+       FETCH
+    ========================= */
     useEffect(() => {
-        const fetchReturnedQuizzes = async () => {
-            try {
-                const res = await axios.get(
-                    `/classes/${classId}/returned-quizzes`
-                );
-                setReturnedQuizzes(Array.isArray(res.data) ? res.data : []);
-            } catch (err) {
-                console.error(err);
-            }
-        };
+        if (!classId) return;
 
-        if (classId) fetchReturnedQuizzes();
+        setLoading(true);
+        axios
+            .get(`/student/quizzes/${classId}`)
+            .then((res) => setQuizzes(Array.isArray(res.data) ? res.data : []))
+            .catch(() => setError("Failed to fetch quizzes"))
+            .finally(() => setLoading(false));
     }, [classId]);
 
-    // Fetch quizzes
-    useEffect(() => {
-        const fetchQuizzes = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-
-                const res = await axios.get(`/student/quizzes/${classId}`);
-                setQuizzes(Array.isArray(res.data) ? res.data : []);
-            } catch (err) {
-                console.error(err);
-                setError("Failed to fetch quizzes.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (classId) fetchQuizzes();
-    }, [classId]);
-
-    // Open quiz safely and initialize timer
+    /* =========================
+       OPEN QUIZ
+    ========================= */
     const handleOpenQuiz = (quiz) => {
         setSelectedQuiz(quiz);
 
-        // Initialize answers
-        const initialAnswers = {};
-        if (Array.isArray(quiz.questions)) {
-            quiz.questions.forEach((q) => {
-                initialAnswers[q.id] = "";
-            });
-        }
-        setStudentAnswers(initialAnswers);
+        const init = {};
+        quiz.questions?.forEach((q) => (init[q.id] = ""));
+        setStudentAnswers(init);
 
-        // Initialize timer
-        const now = new Date().getTime();
-        const endsAt = new Date(quiz.ends_at).getTime();
-        const remaining = Math.max(0, Math.floor((endsAt - now) / 1000));
-
+        const remaining = Math.max(
+            0,
+            Math.floor((new Date(quiz.ends_at) - new Date()) / 1000)
+        );
         setTimeLeft(remaining);
         setTimeUp(remaining === 0);
     };
 
-    // Countdown timer
+    /* =========================
+       TIMER
+    ========================= */
     useEffect(() => {
         if (!selectedQuiz || timeUp || timeLeft === null) return;
 
         const interval = setInterval(() => {
-            const now = new Date().getTime();
-            const endsAt = new Date(selectedQuiz.ends_at).getTime();
-            const remaining = Math.max(0, Math.floor((endsAt - now) / 1000));
+            const remaining = Math.max(
+                0,
+                Math.floor((new Date(selectedQuiz.ends_at) - new Date()) / 1000)
+            );
 
             setTimeLeft(remaining);
 
             if (remaining === 0) {
                 clearInterval(interval);
                 setTimeUp(true);
-                handleSubmit(); // auto-submit
+                handleSubmit();
             }
         }, 1000);
 
         return () => clearInterval(interval);
     }, [selectedQuiz, timeUp]);
 
-    const handleAnswer = (questionId, value) => {
-        setStudentAnswers((prev) => ({
-            ...prev,
-            [questionId]: value,
-        }));
-    };
-
+    /* =========================
+       SUBMIT
+    ========================= */
     const handleSubmit = async () => {
         if (!selectedQuiz) return;
 
-        try {
-            await axios.post(`/quizzes/${selectedQuiz.id}/submit`, {
-                answers: studentAnswers,
-            });
-            alert("Quiz submitted successfully!");
-            setSelectedQuiz(null);
-            setStudentAnswers({});
-            setTimeLeft(null);
-            setTimeUp(false);
-        } catch (err) {
-            console.error(err.response?.data || err.message);
-            alert("Failed to submit quiz.");
-        }
+        await axios.post(`/quizzes/${selectedQuiz.id}/submit`, {
+            answers: studentAnswers,
+        });
+
+        setSelectedQuiz(null);
+        setStudentAnswers({});
+        setTimeLeft(null);
+        setTimeUp(false);
     };
 
-    if (loading) return <p>Loading quizzes...</p>;
-    if (error) return <p className="text-red-500">{error}</p>;
+    /* =========================
+       FILTERS
+    ========================= */
+    const now = new Date();
 
-    // Quiz list view
-    if (!selectedQuiz) {
-        return (
-            <div className="space-y-4">
-                <div className="flex justify-end mb-4">
-                    <button
-                        onClick={() => setShowReturned(!showReturned)}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                        {showReturned
-                            ? "Hide Returned Quizzes"
-                            : "Show Returned Quizzes"}
-                    </button>
-                </div>
-                {showReturned && (
-                    <div className="mt-8">
-                        <h2 className="text-xl font-bold mb-4">
-                            Returned Quizzes
-                        </h2>
-                        <div className="space-y-4">
-                            {returnedQuizzes.map((quiz) => (
-                                <div
-                                    key={quiz.id}
-                                    className="p-4 border rounded bg-green-50 cursor-pointer hover:bg-green-100"
-                                    onClick={() => handleOpenReturnedQuiz(quiz)}
-                                >
-                                    <h3 className="font-semibold">
-                                        {quiz.title}
-                                    </h3>
-                                    <p className="text-gray-500 text-sm">
-                                        Returned at:{" "}
-                                        {new Date(
-                                            quiz.returned_at
-                                        ).toLocaleString()}
-                                    </p>
-                                    {quiz.score !== null && (
-                                        <p className="text-sm text-green-700">
-                                            Score: {quiz.score} /{" "}
-                                            {quiz.max_score}
-                                        </p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+    const availableQuizzes = quizzes.filter(
+        (q) =>
+            !q.submitted &&
+            new Date(q.starts_at) <= now &&
+            new Date(q.ends_at) > now
+    );
 
-                {quizzes.length === 0 && <p>No quizzes available.</p>}
-                {quizzes.map((quiz) => (
-                    <div
-                        key={quiz.id}
-                        className={`p-4 border rounded shadow cursor-pointer ${
-                            quiz.submitted
-                                ? "bg-gray-100 cursor-not-allowed"
-                                : "hover:shadow-md"
-                        }`}
-                        onClick={() => !quiz.submitted && handleOpenQuiz(quiz)}
-                    >
-                        <h3 className="font-semibold text-lg">{quiz.title}</h3>
-                        <p className="text-gray-500 text-sm">
-                            {quiz.description || "No description available."}
-                        </p>
-                        <p className="text-sm text-gray-400">
-                            {quiz.submitted
-                                ? "Already Submitted"
-                                : "Not Submitted"}
-                        </p>
-                    </div>
-                ))}
-            </div>
-        );
-    }
-    // Selected quiz view
+    const endedQuizzes = quizzes.filter(
+        (q) => !q.submitted && new Date(q.ends_at) <= now
+    );
+
+    const submittedQuizzes = quizzes.filter((q) => q.submitted);
+
+    const list =
+        activeTab === "available"
+            ? availableQuizzes
+            : activeTab === "ended"
+            ? endedQuizzes
+            : submittedQuizzes;
+
+    if (loading) return <p className="text-center mt-10">Loading…</p>;
+    if (error) return <p className="text-center text-red-500">{error}</p>;
+
+    /* =========================
+       UI
+    ========================= */
     return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-bold">{selectedQuiz.title}</h2>
+        <div className="h-[calc(100vh-64px)]">
+            <div className="max-w-7xl mx-auto h-full grid grid-cols-[360px_1fr] gap-6 p-6">
+                {/* ================= LEFT: QUIZ LIST ================= */}
+                <div className="bg-white rounded-xl border shadow-sm flex flex-col">
+                    {/* Tabs */}
+                    <div className="flex gap-2 p-4 border-b">
+                        {[
+                            ["available", "Available"],
+                            ["ended", "Ended"],
+                            ["submitted", "Submitted"],
+                        ].map(([key, label]) => (
+                            <button
+                                key={key}
+                                onClick={() => setActiveTab(key)}
+                                className={`px-4 py-1.5 text-sm rounded-md transition
+                                    ${
+                                        activeTab === key
+                                            ? "bg-violet-600 text-white"
+                                            : "text-gray-600 hover:bg-violet-100"
+                                    }
+                                `}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
 
-            {/* Timer */}
-            <div className="text-right font-semibold text-red-600">
-                {timeUp
-                    ? "Time's up!"
-                    : `Time Left: ${Math.floor(timeLeft / 60)}:${String(
-                          timeLeft % 60
-                      ).padStart(2, "0")}`}
-            </div>
-
-            {Array.isArray(selectedQuiz.questions) &&
-                selectedQuiz.questions.map((q, idx) => (
-                    <div key={q.id} className="border rounded p-4 bg-gray-50">
-                        <p className="font-medium mb-2">
-                            {idx + 1}. {q.question_text}
-                        </p>
-
-                        {/* Multiple Choice */}
-                        {q.type === "mcq" &&
-                            Array.isArray(q.choices) &&
-                            q.choices.map((choice) => (
-                                <label
-                                    key={choice.id}
-                                    className="flex items-center gap-2"
-                                >
-                                    <input
-                                        type="radio"
-                                        name={`question_${q.id}`}
-                                        value={choice.choice_text}
-                                        checked={
-                                            studentAnswers[q.id] ===
-                                            choice.choice_text
-                                        }
-                                        onChange={() =>
-                                            handleAnswer(
-                                                q.id,
-                                                choice.choice_text
-                                            )
-                                        }
-                                        className="text-purple-600"
-                                        disabled={timeUp}
-                                    />
-                                    <span>{choice.choice_text}</span>
-                                </label>
-                            ))}
-
-                        {/* Identification */}
-                        {q.type === "identification" && (
-                            <input
-                                type="text"
-                                value={studentAnswers[q.id] || ""}
-                                onChange={(e) =>
-                                    handleAnswer(q.id, e.target.value)
+                    {/* List */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {list.map((q) => (
+                            <QuizItem
+                                key={q.id}
+                                quiz={q}
+                                active={selectedQuiz?.id === q.id}
+                                onClick={() =>
+                                    !q.submitted &&
+                                    activeTab === "available" &&
+                                    handleOpenQuiz(q)
                                 }
-                                className="w-full border rounded p-2"
-                                placeholder="Type your answer"
-                                disabled={timeUp}
+                                status={activeTab}
                             />
-                        )}
+                        ))}
 
-                        {/* Essay */}
-                        {q.type === "essay" && (
-                            <textarea
-                                value={studentAnswers[q.id] || ""}
-                                onChange={(e) =>
-                                    handleAnswer(q.id, e.target.value)
-                                }
-                                className="w-full border rounded p-2"
-                                placeholder="Write your essay answer"
-                                disabled={timeUp}
-                            />
+                        {list.length === 0 && (
+                            <p className="text-sm text-gray-500 text-center">
+                                No quizzes found
+                            </p>
                         )}
                     </div>
-                ))}
+                </div>
 
-            <button
-                onClick={handleSubmit}
-                disabled={timeUp}
-                className={`w-full py-3 rounded-lg text-white ${
-                    timeUp ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
-                }`}
-            >
-                Submit Quiz
-            </button>
+                {/* ================= RIGHT: QUIZ TAKING ================= */}
+                <div className="bg-white rounded-xl border shadow-sm p-8 overflow-y-auto">
+                    {!selectedQuiz ? (
+                        <div className="h-full flex items-center justify-center text-gray-400">
+                            <p>Select a quiz from the left panel</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Header */}
+                            <div className="flex justify-between items-center border-b pb-4 mb-6">
+                                <h2 className="text-xl font-semibold">
+                                    {selectedQuiz.title}
+                                </h2>
+                                <span className="font-mono bg-red-50 text-red-600 px-3 py-1 rounded-full">
+                                    {Math.floor(timeLeft / 60)}:
+                                    {String(timeLeft % 60).padStart(2, "0")}
+                                </span>
+                            </div>
 
-            <button
-                onClick={() => setSelectedQuiz(null)}
-                className="w-full py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                            {/* Questions */}
+                            <div className="space-y-6">
+                                {selectedQuiz.questions?.map((q, idx) => (
+                                    <div
+                                        key={q.id}
+                                        className="p-5 rounded-lg bg-slate-50 border"
+                                    >
+                                        <p className="font-medium mb-3">
+                                            {idx + 1}. {q.question_text}
+                                        </p>
+
+                                        {q.type === "mcq" &&
+                                            q.choices?.map((c) => (
+                                                <label
+                                                    key={c.id}
+                                                    className="flex items-center gap-2 mb-2"
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name={`q${q.id}`}
+                                                        checked={
+                                                            studentAnswers[
+                                                                q.id
+                                                            ] === c.choice_text
+                                                        }
+                                                        onChange={() =>
+                                                            setStudentAnswers(
+                                                                (a) => ({
+                                                                    ...a,
+                                                                    [q.id]:
+                                                                        c.choice_text,
+                                                                })
+                                                            )
+                                                        }
+                                                    />
+                                                    {c.choice_text}
+                                                </label>
+                                            ))}
+
+                                        {q.type === "identification" && (
+                                            <input
+                                                className="w-full border rounded px-3 py-2"
+                                                value={studentAnswers[q.id]}
+                                                onChange={(e) =>
+                                                    setStudentAnswers((a) => ({
+                                                        ...a,
+                                                        [q.id]: e.target.value,
+                                                    }))
+                                                }
+                                            />
+                                        )}
+
+                                        {q.type === "essay" && (
+                                            <div className="space-y-3">
+                                                {/* Rubric */}
+                                                {q.rubric && (
+                                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                                        <p className="text-sm font-semibold text-amber-800 mb-1">
+                                                            Grading Rubric
+                                                        </p>
+                                                        <p className="text-sm text-amber-700 whitespace-pre-line">
+                                                            {q.rubric}
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {/* Answer box */}
+                                                <textarea
+                                                    className="w-full border rounded-lg px-3 py-2 min-h-[140px] focus:ring-2 focus:ring-violet-500 outline-none"
+                                                    placeholder="Write your answer here…"
+                                                    value={studentAnswers[q.id]}
+                                                    onChange={(e) =>
+                                                        setStudentAnswers(
+                                                            (a) => ({
+                                                                ...a,
+                                                                [q.id]:
+                                                                    e.target
+                                                                        .value,
+                                                            })
+                                                        )
+                                                    }
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end mt-8">
+                                <button
+                                    onClick={handleSubmit}
+                                    className="px-6 py-2 bg-emerald-600 text-white rounded-lg shadow"
+                                >
+                                    Submit Quiz
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* =========================
+   QUIZ ITEM
+========================= */
+function QuizItem({ quiz, onClick, active, status }) {
+    const badge = {
+        available: "bg-violet-100 text-violet-700",
+        ended: "bg-gray-200 text-gray-600",
+        submitted: "bg-blue-100 text-blue-700",
+    };
+
+    return (
+        <div
+            onClick={onClick}
+            className={`p-4 rounded-lg border transition
+                ${
+                    active
+                        ? "border-violet-600 bg-violet-50"
+                        : "hover:border-violet-300"
+                }
+                ${status !== "available" ? "opacity-60" : "cursor-pointer"}
+            `}
+        >
+            <p className="font-medium">{quiz.title}</p>
+            <span
+                className={`inline-block mt-2 text-xs px-3 py-1 rounded-full ${badge[status]}`}
             >
-                Back to Quizzes
-            </button>
+                {status}
+            </span>
         </div>
     );
 }

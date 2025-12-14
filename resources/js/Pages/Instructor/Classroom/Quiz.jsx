@@ -3,8 +3,8 @@ import axios from "axios";
 
 export default function Quiz({ classId }) {
     /* =========================
-       STATE
-    ========================== */
+     STATE
+  ========================== */
     const [quizzes, setQuizzes] = useState([]);
     const [showCreate, setShowCreate] = useState(false);
     const [selectedQuiz, setSelectedQuiz] = useState(null);
@@ -16,12 +16,19 @@ export default function Quiz({ classId }) {
     const [startsAt, setStartsAt] = useState("");
     const [endsAt, setEndsAt] = useState("");
 
+    const card =
+        "bg-white rounded-2xl shadow-sm border border-gray-200 p-5 transition";
+
     /* =========================
-       FETCH
-    ========================== */
+     FETCH QUIZZES
+  ========================== */
     const fetchQuizzes = async () => {
-        const res = await axios.get(`/classes/${classId}/quizzes`);
-        setQuizzes(res.data);
+        try {
+            const res = await axios.get(`/classes/${classId}/quizzes`);
+            setQuizzes(res.data);
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     useEffect(() => {
@@ -29,8 +36,8 @@ export default function Quiz({ classId }) {
     }, []);
 
     /* =========================
-       CREATE QUIZ LOGIC
-    ========================== */
+     CREATE QUIZ LOGIC
+  ========================== */
     const addQuestion = () => {
         setQuestions([
             ...questions,
@@ -79,452 +86,497 @@ export default function Quiz({ classId }) {
     };
 
     const createQuiz = async () => {
-        await axios.post(`/classes/${classId}/quizzes`, {
-            title,
-            description,
-            starts_at: startsAt || null,
-            ends_at: endsAt || null,
-            questions,
-        });
+        try {
+            await axios.post(`/classes/${classId}/quizzes`, {
+                title,
+                description,
+                starts_at: startsAt || null,
+                ends_at: endsAt || null,
+                questions,
+            });
 
-        setTitle("");
-        setDescription("");
-        setStartsAt("");
-        setEndsAt("");
-        setQuestions([]);
-        setShowCreate(false);
-        fetchQuizzes();
+            setTitle("");
+            setDescription("");
+            setStartsAt("");
+            setEndsAt("");
+            setQuestions([]);
+            setShowCreate(false);
+            fetchQuizzes();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to create quiz.");
+        }
     };
 
-    const card = "bg-white rounded-xl shadow-sm border border-gray-200 p-5";
-
     /* =========================
-       RENDER
-    ========================== */
+     UI: LEFT (quiz list) / RIGHT (selected quiz)
+  ========================== */
     return (
-        <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-            {/* HEADER */}
-            <div className="flex justify-end">
-                {!showCreate && (
-                    <button
-                        onClick={() => {
-                            setShowCreate(true);
-                            setSelectedQuiz(null);
-                            setSelectedSubmission(null);
-                        }}
-                        className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm"
-                    >
-                        + Create Quiz
-                    </button>
-                )}
-            </div>
-
-            {/* CREATE QUIZ */}
-            {showCreate && (
-                <div className={card}>
-                    <h2 className="text-lg font-semibold mb-6">Create Quiz</h2>
-
-                    <input
-                        className="w-full px-4 py-2 border rounded-lg mb-4"
-                        placeholder="Quiz title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                    />
-
-                    <input
-                        className="w-full px-4 py-2 border rounded-lg mb-4"
-                        placeholder="Quiz description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                    />
-
-                    <div className="grid md:grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label className="text-sm text-gray-600">
-                                Start Time
-                            </label>
-                            <input
-                                type="datetime-local"
-                                className="w-full border rounded-lg px-3 py-2"
-                                value={startsAt}
-                                onChange={(e) => setStartsAt(e.target.value)}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-sm text-gray-600">
-                                End Time
-                            </label>
-                            <input
-                                type="datetime-local"
-                                className="w-full border rounded-lg px-3 py-2"
-                                value={endsAt}
-                                onChange={(e) => setEndsAt(e.target.value)}
-                            />
-                        </div>
+        <div className="h-[calc(100vh-64px)] p-3">
+            <div className="max-w-7xl mx-auto h-full grid grid-cols-[300px_1fr] gap-6">
+                {/* LEFT PANEL: QUIZ LIST */}
+                <div className="bg-white rounded-2xl border shadow-sm flex flex-col">
+                    <div className="flex justify-between items-center p-4 border-b">
+                        <h2 className="font-semibold">Quizzes</h2>
+                        <button
+                            onClick={() => {
+                                setShowCreate(true);
+                                setSelectedQuiz(null);
+                                setSelectedSubmission(null);
+                            }}
+                            className="px-3 py-1 rounded-full bg-violet-600 text-white text-sm hover:bg-violet-700 transition"
+                        >
+                            + Create
+                        </button>
                     </div>
 
-                    {/* QUESTIONS */}
-                    <div className="space-y-6">
-                        {questions.map((q, qIndex) => (
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {quizzes.length === 0 && (
+                            <p className="text-sm text-gray-500 text-center mt-6">
+                                No quizzes yet
+                            </p>
+                        )}
+
+                        {quizzes.map((quiz) => (
                             <div
-                                key={qIndex}
-                                className="border rounded-lg p-4 space-y-3"
+                                key={quiz.id}
+                                onClick={() => {
+                                    setSelectedQuiz(quiz);
+                                    setSelectedSubmission(null);
+                                    setShowCreate(false);
+                                }}
+                                className={`p-3 rounded-xl border cursor-pointer transition hover:border-violet-400 ${
+                                    selectedQuiz?.id === quiz.id
+                                        ? "border-violet-600 bg-violet-50"
+                                        : "bg-white"
+                                }`}
                             >
-                                <div className="flex justify-between">
-                                    <select
-                                        className="border rounded-lg px-3 py-2"
-                                        value={q.type}
-                                        onChange={(e) =>
-                                            updateQuestion(
-                                                qIndex,
-                                                "type",
-                                                e.target.value
-                                            )
-                                        }
-                                    >
-                                        <option value="mcq">
-                                            Multiple Choice
-                                        </option>
-                                        <option value="identification">
-                                            Identification
-                                        </option>
-                                        <option value="essay">Essay</option>
-                                    </select>
-
-                                    <button
-                                        onClick={() => removeQuestion(qIndex)}
-                                        className="text-red-500 text-sm"
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-
-                                <textarea
-                                    className="w-full border rounded-lg px-3 py-2"
-                                    placeholder="Question"
-                                    value={q.question_text}
-                                    onChange={(e) =>
-                                        updateQuestion(
-                                            qIndex,
-                                            "question_text",
-                                            e.target.value
-                                        )
-                                    }
-                                />
-
-                                <input
-                                    type="number"
-                                    min="1"
-                                    className="w-32 border rounded-lg px-3 py-2"
-                                    value={q.points}
-                                    onChange={(e) =>
-                                        updateQuestion(
-                                            qIndex,
-                                            "points",
-                                            Number(e.target.value)
-                                        )
-                                    }
-                                />
-
-                                {q.type === "mcq" && (
-                                    <div className="space-y-2">
-                                        {q.choices.map((choice, cIndex) => (
-                                            <div
-                                                key={cIndex}
-                                                className="flex items-center gap-2"
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    name={`correct-${qIndex}`}
-                                                    checked={choice.is_correct}
-                                                    onChange={() =>
-                                                        markCorrectChoice(
-                                                            qIndex,
-                                                            cIndex
-                                                        )
-                                                    }
-                                                />
-                                                <input
-                                                    className="flex-1 border rounded-lg px-3 py-2"
-                                                    placeholder={`Choice ${
-                                                        cIndex + 1
-                                                    }`}
-                                                    value={choice.text}
-                                                    onChange={(e) =>
-                                                        updateChoice(
-                                                            qIndex,
-                                                            cIndex,
-                                                            "text",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
-                                            </div>
-                                        ))}
-                                        <button
-                                            onClick={() => addChoice(qIndex)}
-                                            className="text-sm text-blue-600"
-                                        >
-                                            + Add Choice
-                                        </button>
-                                    </div>
-                                )}
-
-                                {q.type === "identification" && (
-                                    <input
-                                        className="w-full border rounded-lg px-3 py-2"
-                                        placeholder="Correct answer"
-                                        value={q.correct_answer}
-                                        onChange={(e) =>
-                                            updateQuestion(
-                                                qIndex,
-                                                "correct_answer",
-                                                e.target.value
-                                            )
-                                        }
-                                    />
-                                )}
-
-                                {q.type === "essay" && (
-                                    <textarea
-                                        className="w-full border rounded-lg px-3 py-2"
-                                        placeholder="Rubric"
-                                        value={q.rubric}
-                                        onChange={(e) =>
-                                            updateQuestion(
-                                                qIndex,
-                                                "rubric",
-                                                e.target.value
-                                            )
-                                        }
-                                    />
-                                )}
+                                <p className="font-medium">{quiz.title}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {quiz.submissions?.length || 0} submissions
+                                </p>
                             </div>
                         ))}
                     </div>
-
-                    <div className="flex gap-3 mt-6">
-                        <button
-                            onClick={addQuestion}
-                            className="px-4 py-2 border rounded-lg"
-                        >
-                            + Add Question
-                        </button>
-
-                        <button
-                            onClick={createQuiz}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-                        >
-                            Save Quiz
-                        </button>
-
-                        <button
-                            onClick={() => setShowCreate(false)}
-                            className="px-4 py-2 text-gray-600"
-                        >
-                            Cancel
-                        </button>
-                    </div>
                 </div>
-            )}
 
-            {/* QUIZ LIST */}
-            {!showCreate && !selectedSubmission && (
-                <div className="grid md:grid-cols-2 gap-4">
-                    {quizzes.length === 0 && (
-                        <p className="text-gray-500">No quizzes created yet.</p>
-                    )}
+                {/* RIGHT PANEL: SELECTED QUIZ / CREATE / SUBMISSION */}
+                <div className="bg-white rounded-2xl border shadow-sm p-6 overflow-y-auto">
+                    {/* CREATE QUIZ */}
+                    {showCreate && (
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-semibold">
+                                Create Quiz
+                            </h2>
 
-                    {quizzes.map((quiz) => (
-                        <div
-                            key={quiz.id}
-                            onClick={() => setSelectedQuiz(quiz)}
-                            className={`${card} cursor-pointer`}
-                        >
-                            <p className="font-medium">{quiz.title}</p>
-                            <p className="text-sm text-gray-500">
-                                {quiz.submissions?.length || 0} submissions
-                            </p>
-                        </div>
-                    ))}
-                </div>
-            )}
+                            <input
+                                className="w-full px-4 py-2 border rounded-lg"
+                                placeholder="Quiz title"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                            />
 
-            {/* SUBMISSIONS */}
-            {selectedQuiz && !showCreate && (
-                <div className={card}>
-                    <h2 className="text-lg font-semibold mb-4">
-                        Submissions – {selectedQuiz.title}
-                    </h2>
-                    <button
-                        onClick={async () => {
-                            try {
-                                await axios.post(
-                                    `/submissions/${selectedQuiz.id}/return`
-                                );
-                                alert(
-                                    "Submission returned to student successfully!"
-                                );
-                                // Optionally refresh quizzes
-                                setSelectedSubmission(null);
-                                fetchQuizzes();
-                            } catch (err) {
-                                console.error(err);
-                                alert("Failed to return submission.");
-                            }
-                        }}
-                        className="px-4 py-2 mt-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                        Return to Student
-                    </button>
+                            <input
+                                className="w-full px-4 py-2 border rounded-lg"
+                                placeholder="Quiz description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
 
-                    {selectedQuiz.submissions.map((sub) => (
-                        <div
-                            key={sub.id}
-                            onClick={() => setSelectedSubmission(sub)}
-                            className="p-3 rounded-lg border cursor-pointer mb-2"
-                        >
-                            {sub.student.student_id} {sub.student.firstname}{" "}
-                            {sub.student.lastname}
-                        </div>
-                    ))}
-                </div>
-            )}
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-gray-500">
+                                        Start Time
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full border rounded-lg px-3 py-2"
+                                        value={startsAt}
+                                        onChange={(e) =>
+                                            setStartsAt(e.target.value)
+                                        }
+                                    />
+                                </div>
 
-            {/* GRADING */}
-            {selectedSubmission && !showCreate && (
-                <div className={card}>
-                    <h2 className="text-lg font-semibold mb-4">
-                        Grading – {selectedSubmission.student.firstname}{" "}
-                        {selectedSubmission.student.lastname}
-                    </h2>
+                                <div>
+                                    <label className="text-xs text-gray-500">
+                                        End Time
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full border rounded-lg px-3 py-2"
+                                        value={endsAt}
+                                        onChange={(e) =>
+                                            setEndsAt(e.target.value)
+                                        }
+                                    />
+                                </div>
+                            </div>
 
-                    <div className="space-y-6">
-                        {selectedSubmission.answers.map((answer) => {
-                            const saved = answer.points_awarded;
-                            const draft =
-                                answer._draft_points ??
-                                answer.points_awarded ??
-                                "";
-
-                            const isGraded = saved !== null;
-                            const hasChanges =
-                                answer._draft_points !== undefined &&
-                                answer._draft_points !== saved;
-
-                            return (
-                                <div
-                                    key={answer.id}
-                                    className="border rounded-lg p-4"
-                                >
-                                    <p className="font-medium">
-                                        {answer.question.question_text}
-                                    </p>
-                                    <p className="text-sm text-gray-700 mt-2">
-                                        {answer.answer_text}
-                                    </p>
-
-                                    {answer.question.type === "essay" && (
-                                        <div className="mt-3 flex items-center gap-3">
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max={answer.question.points}
-                                                value={draft}
-                                                className="w-32 px-3 py-2 border rounded-lg"
+                            {/* QUESTIONS */}
+                            <div className="space-y-4">
+                                {questions.map((q, qIndex) => (
+                                    <div
+                                        key={qIndex}
+                                        className="border rounded-xl p-4 bg-slate-50 space-y-3"
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <select
+                                                className="border rounded-lg px-3 py-2"
+                                                value={q.type}
                                                 onChange={(e) =>
-                                                    setSelectedSubmission(
-                                                        (prev) => ({
-                                                            ...prev,
-                                                            answers:
-                                                                prev.answers.map(
-                                                                    (a) =>
-                                                                        a.id ===
-                                                                        answer.id
-                                                                            ? {
-                                                                                  ...a,
-                                                                                  _draft_points:
-                                                                                      Number(
-                                                                                          e
-                                                                                              .target
-                                                                                              .value
-                                                                                      ),
-                                                                              }
-                                                                            : a
-                                                                ),
-                                                        })
+                                                    updateQuestion(
+                                                        qIndex,
+                                                        "type",
+                                                        e.target.value
+                                                    )
+                                                }
+                                            >
+                                                <option value="mcq">
+                                                    Multiple Choice
+                                                </option>
+                                                <option value="identification">
+                                                    Identification
+                                                </option>
+                                                <option value="essay">
+                                                    Essay
+                                                </option>
+                                            </select>
+
+                                            <button
+                                                onClick={() =>
+                                                    removeQuestion(qIndex)
+                                                }
+                                                className="text-xs text-red-500 hover:underline"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+
+                                        <textarea
+                                            className="w-full border rounded-lg px-3 py-2"
+                                            placeholder="Question"
+                                            value={q.question_text}
+                                            onChange={(e) =>
+                                                updateQuestion(
+                                                    qIndex,
+                                                    "question_text",
+                                                    e.target.value
+                                                )
+                                            }
+                                        />
+
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            className="w-32 border rounded-lg px-3 py-2"
+                                            value={q.points}
+                                            onChange={(e) =>
+                                                updateQuestion(
+                                                    qIndex,
+                                                    "points",
+                                                    Number(e.target.value)
+                                                )
+                                            }
+                                        />
+
+                                        {/* MCQ */}
+                                        {q.type === "mcq" && (
+                                            <div className="space-y-2">
+                                                {q.choices.map(
+                                                    (choice, cIndex) => (
+                                                        <div
+                                                            key={cIndex}
+                                                            className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border"
+                                                        >
+                                                            <input
+                                                                type="radio"
+                                                                name={`correct-${qIndex}`}
+                                                                checked={
+                                                                    choice.is_correct
+                                                                }
+                                                                onChange={() =>
+                                                                    markCorrectChoice(
+                                                                        qIndex,
+                                                                        cIndex
+                                                                    )
+                                                                }
+                                                            />
+                                                            <input
+                                                                className="flex-1 border rounded-lg px-3 py-2"
+                                                                placeholder={`Choice ${
+                                                                    cIndex + 1
+                                                                }`}
+                                                                value={
+                                                                    choice.text
+                                                                }
+                                                                onChange={(e) =>
+                                                                    updateChoice(
+                                                                        qIndex,
+                                                                        cIndex,
+                                                                        "text",
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                            />
+                                                        </div>
+                                                    )
+                                                )}
+                                                <button
+                                                    onClick={() =>
+                                                        addChoice(qIndex)
+                                                    }
+                                                    className="text-sm text-blue-600"
+                                                >
+                                                    + Add Choice
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* Identification */}
+                                        {q.type === "identification" && (
+                                            <input
+                                                className="w-full border rounded-lg px-3 py-2"
+                                                placeholder="Correct answer"
+                                                value={q.correct_answer}
+                                                onChange={(e) =>
+                                                    updateQuestion(
+                                                        qIndex,
+                                                        "correct_answer",
+                                                        e.target.value
                                                     )
                                                 }
                                             />
+                                        )}
 
-                                            <button
-                                                disabled={!hasChanges}
-                                                onClick={async () => {
-                                                    await axios.post(
-                                                        `/submissions/${selectedSubmission.id}/grade-essay`,
-                                                        {
-                                                            answer_id:
-                                                                answer.id,
-                                                            points_awarded:
-                                                                answer._draft_points,
+                                        {/* Essay */}
+                                        {q.type === "essay" && (
+                                            <textarea
+                                                className="w-full border rounded-lg px-3 py-2 bg-amber-50"
+                                                placeholder="Rubric (for instructors)"
+                                                value={q.rubric}
+                                                onChange={(e) =>
+                                                    updateQuestion(
+                                                        qIndex,
+                                                        "rubric",
+                                                        e.target.value
+                                                    )
+                                                }
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="flex gap-3 mt-4">
+                                <button
+                                    onClick={addQuestion}
+                                    className="px-4 py-2 border rounded-lg"
+                                >
+                                    + Add Question
+                                </button>
+                                <button
+                                    onClick={createQuiz}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                                >
+                                    Save Quiz
+                                </button>
+                                <button
+                                    onClick={() => setShowCreate(false)}
+                                    className="px-4 py-2 text-gray-600"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* VIEW SUBMISSIONS / GRADING */}
+                    {!showCreate && selectedQuiz && !selectedSubmission && (
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-semibold">
+                                {selectedQuiz.title} – Submissions
+                            </h2>
+
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await axios.post(
+                                            `/submissions/${selectedQuiz.id}/return`
+                                        );
+                                        alert(
+                                            "Returned to student successfully!"
+                                        );
+                                        fetchQuizzes();
+                                    } catch (err) {
+                                        console.error(err);
+                                        alert("Failed to return.");
+                                    }
+                                }}
+                                className="px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                            >
+                                Return to Student
+                            </button>
+
+                            <div className="space-y-2 mt-2">
+                                {selectedQuiz.submissions.map((sub) => (
+                                    <div
+                                        key={sub.id}
+                                        onClick={() =>
+                                            setSelectedSubmission(sub)
+                                        }
+                                        className="p-3 rounded-xl border bg-white cursor-pointer hover:border-violet-400"
+                                    >
+                                        {sub.student.student_id}{" "}
+                                        {sub.student.firstname}{" "}
+                                        {sub.student.lastname}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* GRADING */}
+                    {!showCreate && selectedSubmission && (
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-semibold">
+                                Grading – {selectedSubmission.student.firstname}{" "}
+                                {selectedSubmission.student.lastname}
+                            </h2>
+
+                            <div className="space-y-4">
+                                {selectedSubmission.answers.map((answer) => {
+                                    const saved = answer.points_awarded;
+                                    const draft =
+                                        answer._draft_points ??
+                                        answer.points_awarded ??
+                                        "";
+                                    const isGraded = saved !== null;
+                                    const hasChanges =
+                                        answer._draft_points !== undefined &&
+                                        answer._draft_points !== saved;
+
+                                    return (
+                                        <div
+                                            key={answer.id}
+                                            className="border rounded-lg p-4"
+                                        >
+                                            <p className="font-medium">
+                                                {answer.question.question_text}
+                                            </p>
+                                            <p className="text-sm text-gray-700 mt-2">
+                                                {answer.answer_text}
+                                            </p>
+
+                                            {answer.question.type ===
+                                                "essay" && (
+                                                <div className="mt-3 flex flex-wrap items-center gap-3">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max={
+                                                            answer.question
+                                                                .points
                                                         }
-                                                    );
+                                                        value={draft}
+                                                        className="w-32 px-3 py-2 border rounded-lg"
+                                                        onChange={(e) =>
+                                                            setSelectedSubmission(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    answers:
+                                                                        prev.answers.map(
+                                                                            (
+                                                                                a
+                                                                            ) =>
+                                                                                a.id ===
+                                                                                answer.id
+                                                                                    ? {
+                                                                                          ...a,
+                                                                                          _draft_points:
+                                                                                              Number(
+                                                                                                  e
+                                                                                                      .target
+                                                                                                      .value
+                                                                                              ),
+                                                                                      }
+                                                                                    : a
+                                                                        ),
+                                                                })
+                                                            )
+                                                        }
+                                                    />
+                                                    <button
+                                                        disabled={!hasChanges}
+                                                        onClick={async () => {
+                                                            await axios.post(
+                                                                `/submissions/${selectedSubmission.id}/grade-essay`,
+                                                                {
+                                                                    answer_id:
+                                                                        answer.id,
+                                                                    points_awarded:
+                                                                        answer._draft_points,
+                                                                }
+                                                            );
+                                                            setSelectedSubmission(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    answers:
+                                                                        prev.answers.map(
+                                                                            (
+                                                                                a
+                                                                            ) =>
+                                                                                a.id ===
+                                                                                answer.id
+                                                                                    ? {
+                                                                                          ...a,
+                                                                                          points_awarded:
+                                                                                              answer._draft_points,
+                                                                                          _draft_points:
+                                                                                              undefined,
+                                                                                      }
+                                                                                    : a
+                                                                        ),
+                                                                })
+                                                            );
+                                                        }}
+                                                        className={`px-3 py-2 rounded-lg text-sm ${
+                                                            hasChanges
+                                                                ? "bg-blue-600 text-white"
+                                                                : "bg-gray-300 text-gray-600"
+                                                        }`}
+                                                    >
+                                                        Save
+                                                    </button>
 
-                                                    setSelectedSubmission(
-                                                        (prev) => ({
-                                                            ...prev,
-                                                            answers:
-                                                                prev.answers.map(
-                                                                    (a) =>
-                                                                        a.id ===
-                                                                        answer.id
-                                                                            ? {
-                                                                                  ...a,
-                                                                                  points_awarded:
-                                                                                      answer._draft_points,
-                                                                                  _draft_points:
-                                                                                      undefined,
-                                                                              }
-                                                                            : a
-                                                                ),
-                                                        })
-                                                    );
-                                                }}
-                                                className={`px-3 py-2 rounded-lg text-sm ${
-                                                    hasChanges
-                                                        ? "bg-blue-600 text-white"
-                                                        : "bg-gray-300 text-gray-600"
-                                                }`}
-                                            >
-                                                Save
-                                            </button>
-
-                                            {hasChanges && (
-                                                <span className="text-xs text-orange-600">
-                                                    Unsaved changes
-                                                </span>
-                                            )}
-
-                                            {!hasChanges && isGraded && (
-                                                <span className="text-xs text-green-700">
-                                                    Graded
-                                                </span>
-                                            )}
-
-                                            {!hasChanges && !isGraded && (
-                                                <span className="text-xs text-yellow-700">
-                                                    Not graded
-                                                </span>
+                                                    {hasChanges && (
+                                                        <span className="text-xs text-orange-600">
+                                                            Unsaved changes
+                                                        </span>
+                                                    )}
+                                                    {!hasChanges &&
+                                                        isGraded && (
+                                                            <span className="text-xs text-green-700">
+                                                                Graded
+                                                            </span>
+                                                        )}
+                                                    {!hasChanges &&
+                                                        !isGraded && (
+                                                            <span className="text-xs text-yellow-700">
+                                                                Not graded
+                                                            </span>
+                                                        )}
+                                                </div>
                                             )}
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 }
