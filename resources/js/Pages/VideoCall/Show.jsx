@@ -350,7 +350,12 @@ export default function VideoCall({ videoCall }) {
             }
 
             // Only set main video if the local user is the host (we don't want participants to replace main)
-            if (currentUser.id === videoCall.host_id && mainVideoRef.current) {
+            // Also avoid replacing the main view while screen sharing is active
+            if (
+                currentUser.id === videoCall.host_id &&
+                mainVideoRef.current &&
+                !sharing
+            ) {
                 mainVideoRef.current.srcObject = stream;
                 mainVideoRef.current.muted = true; // mute local host main to avoid feedback
                 try {
@@ -417,9 +422,11 @@ export default function VideoCall({ videoCall }) {
                 }
 
                 // Only attach main video to stream if host (avoid replacing main for participants)
+                // Do not replace main while screen sharing is active
                 if (
                     currentUser.id === videoCall.host_id &&
-                    mainVideoRef.current
+                    mainVideoRef.current &&
+                    !sharing
                 ) {
                     mainVideoRef.current.srcObject = stream;
                     mainVideoRef.current.muted = true;
@@ -493,10 +500,11 @@ export default function VideoCall({ videoCall }) {
                     el.play?.().catch(() => {});
                 }
 
-                // Update main video if host
+                // Update main video if host; avoid replacing it while screen sharing
                 if (
                     currentUser.id === videoCall.host_id &&
-                    mainVideoRef.current
+                    mainVideoRef.current &&
+                    !sharing
                 ) {
                     mainVideoRef.current.srcObject = newStream;
                     mainVideoRef.current.muted = true;
