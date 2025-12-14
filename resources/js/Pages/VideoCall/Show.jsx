@@ -27,57 +27,6 @@ export default function VideoCall({ videoCall }) {
     const pendingStreamsRef = useRef(new Map());
 
     // map of participantPeerId (or fallback id) => DOM video element
-    {
-        /* Reaction overlay */
-    }
-    {
-        (() => {
-            const userKeyForReaction = String(p.user.id);
-            return (
-                <>
-                    {reactionOverlays[userKeyForReaction] && (
-                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 pointer-events-none">
-                            <div className="text-3xl animate-pop">
-                                {reactionOverlays[userKeyForReaction]}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Reaction button (open picker) */}
-                    <div className="absolute bottom-2 right-2">
-                        <div className="relative">
-                            <button
-                                onClick={() => openPicker(userKeyForReaction)}
-                                className="p-1 bg-gray-800 rounded-full text-sm hover:bg-gray-700"
-                                title="React"
-                            >
-                                🙂
-                            </button>
-
-                            {/* Picker */}
-                            {pickerOpenFor === userKeyForReaction && (
-                                <div className="absolute bottom-10 right-0 bg-[#121417] border border-gray-700 rounded-md p-2 flex gap-2 shadow-lg">
-                                    {["👍", "❤️", "😂", "👏", "😮"].map(
-                                        (emo) => (
-                                            <button
-                                                key={emo}
-                                                onClick={() =>
-                                                    sendReaction(p.user.id, emo)
-                                                }
-                                                className="text-xl p-1 hover:scale-110 transition"
-                                            >
-                                                {emo}
-                                            </button>
-                                        )
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </>
-            );
-        })();
-    }
     const participantsVideoRefs = useRef(new Map());
 
     const [peerId, setPeerId] = useState(null);
