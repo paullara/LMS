@@ -2,6 +2,7 @@ import { useForm, usePage, router, Link } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Thread from "./Instructor/Classroom/Threads";
 import Quiz from "@/Pages/Quiz";
+import ReturnedQuiz from "./ReturnedQuiz";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -248,21 +249,25 @@ export default function Classroom({
 
                 {/* Tabs */}
                 <div className="flex space-x-6 mb-4 border-b">
-                    {["general", "materials", "assignments", "quiz"].map(
-                        (tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`py-2 px-4 text-sm font-semibold border-b-2 ${
-                                    activeTab === tab
-                                        ? "border-purple-600 text-purple-600"
-                                        : "border-transparent text-gray-500 hover:text-purple-600"
-                                }`}
-                            >
-                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                            </button>
-                        )
-                    )}
+                    {[
+                        "general",
+                        "materials",
+                        "assignments",
+                        "quiz",
+                        "returned quiz",
+                    ].map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`py-2 px-4 text-sm font-semibold border-b-2 ${
+                                activeTab === tab
+                                    ? "border-purple-600 text-purple-600"
+                                    : "border-transparent text-gray-500 hover:text-purple-600"
+                            }`}
+                        >
+                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Tab Content */}
@@ -273,6 +278,9 @@ export default function Classroom({
 
                     {activeTab === "general" && (
                         <Thread classId={classroom.id} />
+                    )}
+                    {activeTab === "returned quiz" && (
+                        <ReturnedQuiz classId={classroom.id} />
                     )}
 
                     {activeTab === "materials" && (

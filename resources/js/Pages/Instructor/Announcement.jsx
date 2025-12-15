@@ -1,151 +1,101 @@
-import Instructor from "@/Layouts/InstructorLayout";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import InstructorLayout from "@/Layouts/InstructorLayout";
 
-export default function Announcement() {
-    const [announcements, setAnnouncements] = useState([]);
-    const [formData, setFormData] = useState({
-        title: "",
-        message: "",
-        class_id: "",
-        class_code: "",
-        is_public: false,
-    });
+export default function AnnouncementCreate() {
+    const [classList, setClassList] = useState([]);
+    const [classId, setClassId] = useState("");
+    const [announcement, setAnnouncement] = useState("");
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState("");
 
-    // Fetch announcements from API
     useEffect(() => {
-        const fetchAnnouncements = async () => {
+        let firstLoad = true;
+
+        const fetchClasses = async () => {
             try {
-                const res = await axios.get("/instructor/announcements");
-                setAnnouncements(res.data.announcements || []);
-            } catch (err) {
-                console.error("Error fetching announcements:", err);
+                if (firstLoad) setLoading(true);
+
+                const res = await axios.get("/instructor/classes/list");
+
+                setClassList(res.data.classList || []);
+            } catch (error) {
+                console.error("Error fetching classes", error);
+            } finally {
+                if (firstLoad) {
+                    setLoading(false);
+                    firstLoad = false;
+                }
             }
         };
-        fetchAnnouncements();
+
+        fetchClasses();
+
+        const interval = setInterval(fetchClasses, 1000);
+        return () => clearInterval(interval);
     }, []);
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: type === "checkbox" ? checked : value,
-        }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const submit = () => {
         setLoading(true);
-        try {
-            const res = await axios.post("/instructor/announcements", formData);
-            setAnnouncements((prev) => [res.data.announcement, ...prev]);
-            setFormData({
-                title: "",
-                message: "",
-                class_id: "",
-                class_code: "",
-                is_public: false,
-            });
-        } catch (err) {
-            console.error("Error posting announcement:", err);
-        } finally {
-            setLoading(false);
-        }
+        setSuccess("");
+
+        axios
+            .post("/instructor/announcements", {
+                class_id: classId,
+                announcement,
+            })
+            .then(() => {
+                setAnnouncement("");
+                setClassId("");
+                setSuccess("Announcement sent to students 🎉");
+            })
+            .finally(() => setLoading(false));
     };
 
     return (
-        <Instructor>
-            <div className="p-6 max-w-3xl mx-auto space-y-6">
-                <h1 className="text-2xl font-semibold text-gray-800">
-                    Announcements
+        <InstructorLayout>
+            <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow">
+                <h1 className="text-2xl font-semibold mb-4">
+                    Post Announcement
                 </h1>
 
-                {/* Form */}
-                <form
-                    onSubmit={handleSubmit}
-                    className="bg-white p-6 rounded-2xl shadow-md space-y-4"
+                <label className="block text-sm font-medium mb-1">
+                    Select Class
+                </label>
+                <select
+                    className="w-full border rounded p-2 mb-4"
+                    value={classId}
+                    onChange={(e) => setClassId(e.target.value)}
+                    disabled={loading}
                 >
-                    <input
-                        type="text"
-                        name="title"
-                        value={formData.title}
-                        onChange={handleChange}
-                        placeholder="Title"
-                        className="w-full border px-3 py-2 rounded-md"
-                        required
-                    />
+                    <option value="">-- Select Class --</option>
+                    {classList.map((cls) => (
+                        <option key={cls.id} value={cls.id}>
+                            {cls.name}
+                        </option>
+                    ))}
+                </select>
 
-                    <textarea
-                        name="message"
-                        value={formData.message}
-                        onChange={handleChange}
-                        placeholder="Write your announcement..."
-                        className="w-full border px-3 py-2 rounded-md"
-                        rows="4"
-                        required
-                    />
+                <label className="block text-sm font-medium mb-1">
+                    Announcement
+                </label>
+                <textarea
+                    rows="4"
+                    className="w-full border rounded p-2 mb-4"
+                    value={announcement}
+                    onChange={(e) => setAnnouncement(e.target.value)}
+                />
 
-                    <input
-                        type="text"
-                        name="class_code"
-                        value={formData.class_code}
-                        onChange={handleChange}
-                        placeholder="Class Code (optional)"
-                        className="w-full border px-3 py-2 rounded-md"
-                    />
+                <button
+                    onClick={submit}
+                    disabled={!classId || !announcement || loading}
+                    className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+                >
+                    {loading ? "Sending..." : "Send Announcement"}
+                </button>
 
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            name="is_public"
-                            checked={formData.is_public}
-                            onChange={handleChange}
-                        />
-                        <span className="text-sm text-gray-700">
-                            Make this public
-                        </span>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-                    >
-                        {loading ? "Posting..." : "Post Announcement"}
-                    </button>
-                </form>
-
-                {/* Display announcements */}
-                <div className="space-y-4">
-                    {announcements.length === 0 ? (
-                        <p className="text-gray-500 text-center mt-4">
-                            No announcements yet.
-                        </p>
-                    ) : (
-                        announcements.map((a) => (
-                            <div
-                                key={a.id}
-                                className="bg-white border rounded-xl p-4 shadow-sm"
-                            >
-                                <h3 className="font-semibold text-gray-800">
-                                    {a.title}
-                                </h3>
-                                <p className="text-gray-600 mt-1">
-                                    {a.message}
-                                </p>
-                                <div className="text-xs text-gray-500 mt-2">
-                                    {a.class
-                                        ? `Class: ${a.class.name}`
-                                        : a.is_public
-                                        ? "Public"
-                                        : "Private"}
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
+                {success && <p className="text-green-600 mt-3">{success}</p>}
             </div>
-        </Instructor>
+        </InstructorLayout>
     );
 }

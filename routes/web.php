@@ -14,6 +14,7 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\QuizSubmissionController;
 use App\Http\Controllers\QuizGradingController;
 use App\Http\Controllers\InstructorController;
+use App\Http\Controllers\InstructorAnnouncementController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\VideoCallMessageController;
 use App\Http\Controllers\ClassMaterialController;
@@ -112,12 +113,12 @@ Route::middleware(['auth', 'instructor'])->group(function () {
     Route::get('/instructor/notifications', function () {
         return Inertia::render('Instructor/Notification');
     })->name('instructor.notification');
-    Route::get('/notifications', function () {
-        return response()->json([
-            'notifications' => auth()->user()->notifications
-        ]);
-    });
     Route::get('/instructor/classlist/improved', [InstructorController::class, 'improvedClassList'])->name('improved.classList');
+    Route::get('/instructor/announcements/create', [InstructorAnnouncementController::class, 'create']);
+    Route::post(
+        '/instructor/announcements',
+        [InstructorAnnouncementController::class, 'store']
+    );
 });
 
 Route::middleware(['auth', 'chairman'])->group(function () {

@@ -102,6 +102,15 @@ export default function AuthenticatedLayout({ header, children }) {
                         </h1>
                     </Link>
 
+                    <Link
+                        href={route("student.notifications")}
+                        className="flex items-center gap-2 mb-6"
+                    >
+                        <h1 className="text-black text-lg font-medium">
+                            Notifications
+                        </h1>
+                    </Link>
+
                     {/* <Link
                         href={route("student.notifications")}
                         className="flex items-center gap-2 mb-6"

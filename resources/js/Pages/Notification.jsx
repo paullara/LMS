@@ -20,8 +20,22 @@ export default function Notification() {
         setLoading(true);
         try {
             const res = await axios.get("/notifications");
-            setNotifications(res.data);
-        } catch (err) {
+            console.log("Notifications response:", res.data);
+
+            let payload = Array.isArray(res.data) ? res.data : [];
+
+            // Ensure each notification's data is parsed
+            payload = payload.map((notif) => ({
+                ...notif,
+                data:
+                    typeof notif.data === "string"
+                        ? JSON.parse(notif.data)
+                        : notif.data,
+            }));
+
+            setNotifications(payload);
+        } catch (error) {
+            console.error(error);
             setNotifications([]);
         }
         setLoading(false);
@@ -34,6 +48,9 @@ export default function Notification() {
 
     // Detect notification type
     const getNotificationType = (notif) => {
+        // Announcement notifications from backend have "Announcement" in the class basename
+        if (notif.type && notif.type.includes("Announcement"))
+            return "announcement";
         if (notif.type && notif.type.includes("Assignment"))
             return "assignment";
         if (notif.type && notif.type.includes("SubmissionGraded"))
@@ -47,6 +64,25 @@ export default function Notification() {
 
     // Render notification content
     const renderNotificationContent = (notif, type) => {
+        if (type === "announcement") {
+            return (
+                <div>
+                    <p className="font-semibold text-lg text-purple-800 flex items-center gap-2">
+                        <BellIcon className="h-5 w-5" />
+                        New announcement
+                        <span className="text-black">
+                            {notif.data.instructor ?? ""}
+                        </span>
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                        {notif.data.message ?? notif.data.announcement ?? ""}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Class: {notif.data.name ?? notif.data.class_name ?? "-"}
+                    </p>
+                </div>
+            );
+        }
         if (type === "graded") {
             return (
                 <div>

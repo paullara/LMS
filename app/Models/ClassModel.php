@@ -54,4 +54,10 @@ class ClassModel extends Model
     {
         return $this->hasmany(Thread::class, 'class_id');
     }
+
+    public function announcements()
+    {
+        return $this->hasMany(InstructorAnnouncement::class, 'class_id');
+    }
+
 }
