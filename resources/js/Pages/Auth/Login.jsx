@@ -135,14 +135,14 @@ export default function Login({ status, canResetPassword }) {
                         </Link>
                     </div>
 
-                    {/* Divider */}
+                    {/*                 
                     <div className="my-6 flex items-center">
                         <div className="flex-grow h-px bg-gray-200"></div>
                         <span className="px-3 text-gray-400 text-sm">OR</span>
                         <div className="flex-grow h-px bg-gray-200"></div>
                     </div>
 
-                    {/* Google Login */}
+                  
                     <div className="text-center">
                         <a
                             href={route("redirect.google")}
@@ -155,7 +155,7 @@ export default function Login({ status, canResetPassword }) {
                             />
                             Continue with Google
                         </a>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>

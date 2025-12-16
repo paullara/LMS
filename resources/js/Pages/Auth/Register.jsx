@@ -221,14 +221,13 @@ export default function Register() {
                         </div>
                     </form>
 
-                    {/* Divider */}
-                    <div className="my-6 flex items-center">
+                    {/* <div className="my-6 flex items-center">
                         <div className="flex-grow h-px bg-gray-300"></div>
                         <span className="px-3 text-gray-500 text-sm">OR</span>
                         <div className="flex-grow h-px bg-gray-300"></div>
                     </div>
 
-                    {/* Google Register */}
+                   
                     <div className="text-center">
                         <a
                             href={route("redirect.google")}
@@ -241,7 +240,7 @@ export default function Register() {
                             />
                             Continue with Google
                         </a>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>
