@@ -45,6 +45,9 @@ export default function StudentProgress() {
                                 <thead className="bg-gray-100 text-gray-600 uppercase text-xs font-semibold">
                                     <tr>
                                         <th className="py-3 px-4 rounded-tl-xl ">
+                                            Student ID Number
+                                        </th>
+                                        <th className="py-3 px-4 rounded-tl-xl ">
                                             Student
                                         </th>
                                         <th className="py-3 px-4">
@@ -69,6 +72,13 @@ export default function StudentProgress() {
                                                     : "bg-gray-50"
                                             } hover:bg-blue-50 transition`}
                                         >
+                                            <td className="py-3 px-4 font-medium text-gray-800">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="truncate">
+                                                        {s.student_id}
+                                                    </span>
+                                                </div>
+                                            </td>
                                             <td className="py-3 px-4 font-medium text-gray-800">
                                                 <div className="flex items-center gap-3">
                                                     <span className="truncate">

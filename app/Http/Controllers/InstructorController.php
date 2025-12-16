@@ -566,6 +566,7 @@ public function updateClassroom(Request $request, $id)
             return [
                 'id' => $student->id,
                 'name' => "{$student->firstname} {$student->lastname}",
+                'student_id' => $student->student_id, // student identifier used in frontend
                 'assignments_completed' => $completedAssignments->count(),
                 'assignments_total' => $assignments->count(),
                 'quizzes_completed' => $completedQuizzes->count(),
