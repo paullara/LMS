@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\InstructorIdNumber;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Http\RedirectResponse;
@@ -29,7 +30,22 @@ class RegisterInstructorController extends Controller
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Password::defaults()],
             'specialization' => 'nullable|string|max:255',
+            'teacher_id' => 'required|string|max:20',
         ]);
+
+        $instructorId = InstructorIdNumber::where('instructor_id_number', $request->teacher_id)->first();
+        if (!$instructorId) {
+            return redirect()->back()->withErrors([
+                'teacher_id' => 'The provided instructor ID is not valid.'
+            ])->withInput();
+        }
+
+        $alreadyRegistered = User::where('teacher_id', $request->teacher_id)->exists();
+        if ($alreadyRegistered) {
+            return redirect()->back()->withErrors([
+                'teacher_id' => 'This instructor ID is already registered. One-time registration only.',
+            ])->withInput();
+        }
 
         $data['role'] = 'instructor';
 
@@ -40,6 +56,7 @@ class RegisterInstructorController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role' => $data['role'],
+            'teacher_id' => $request->teacher_id,
         ]);
 
         event(new Registered($user));

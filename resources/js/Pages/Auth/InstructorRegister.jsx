@@ -13,6 +13,7 @@ export default function InstructorRegister() {
         email: "",
         password: "",
         password_confirmation: "",
+        teacher_id: "",
     });
 
     const submit = (e) => {
@@ -155,6 +156,28 @@ export default function InstructorRegister() {
                                 />
                                 <InputError
                                     message={errors.email}
+                                    className="mt-2"
+                                />
+                            </div>
+                            {/* Student ID */}
+                            <div>
+                                <InputLabel
+                                    htmlFor="instructor_id_number"
+                                    value="Instructor ID"
+                                />
+                                <TextInput
+                                    id="teacher_id"
+                                    name="teacher_id"
+                                    value={data.teacher_id}
+                                    className="mt-1 block w-full rounded-lg"
+                                    onChange={(e) =>
+                                        setData("teacher_id", e.target.value)
+                                    }
+                                    required
+                                    placeholder="e.g., 20-SC-1001"
+                                />
+                                <InputError
+                                    message={errors.teacher_id} // <-- will show server validation error
                                     className="mt-2"
                                 />
                             </div>
