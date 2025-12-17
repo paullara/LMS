@@ -275,7 +275,7 @@ export default function Welcome({ auth }) {
                     <div className="w-3/6 flex items-center gap-2">
                         <img src="logo/psu.png" alt="" className="h-15 w-12" />
                         <h1 className="text-bluepsu text-2xl tracking-wide font-md">
-                            <span className="text-gold">PSU</span>Learn Nigga
+                            <span className="text-gold">PSU</span>Learn
                         </h1>
                     </div>
 
