@@ -19,8 +19,9 @@ Route::post('/quiz', [QuizController::class, 'store']);
 // routes/api.php
 Route::get('/instructor/groups/{group}/messages', [MessageController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/instructor/groups/{group}/messages', [MessageController::class, 'store'])->middleware('auth:sanctum');
-Route::get('/quizzes/submissions', [AIEndpointController::class, 'quizSubmissions']);
+
 Route::post('/ai/class-performance', [AIEndpointController::class, 'storeClassPerformance']);
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
