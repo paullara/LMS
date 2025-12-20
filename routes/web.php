@@ -195,7 +195,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/submissions/{submission}/finalize', [QuizSubmissionController::class, 'finalize']);
     Route::post('/submissions/{quiz}/return', [QuizController::class, 'returnToStudent']);
     Route::get('/classes/{classId}/returned-quizzes', [QuizController::class, 'returnedQuiz']);
-
 });
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('redirect.google');
@@ -212,6 +211,7 @@ Route::post('/video-call/{id}/register-peer', [VideoCallController::class, 'regi
 Route::post('/video-call/{id}/leave', [VideoCallController::class, 'leave']);
 
 // Anuthorized route
+
 
 // refactor ver
 Route::post('/class/materials/{classrom}', [ClassMaterialController::class, 'store']);

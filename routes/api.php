@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\AIEndpointController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\MessageController;
 
@@ -18,7 +19,7 @@ Route::post('/quiz', [QuizController::class, 'store']);
 // routes/api.php
 Route::get('/instructor/groups/{group}/messages', [MessageController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/instructor/groups/{group}/messages', [MessageController::class, 'store'])->middleware('auth:sanctum');
-
+Route::get('/quizzes/submissions', [AIEndpointController::class, 'quizSubmissions']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
