@@ -8,11 +8,12 @@ use App\Models\QuizSubmission;
 class AIEndpointController extends Controller
 {
     public function quizSubmissions()
-    {
-        $quizSubmissions = QuizSubmission::all();
+{
+    $quizSubmissions = QuizSubmission::with(['student', 'quiz'])->get();
 
-        return response()->json([
-            'quiz_submissions' => $quizSubmissions
-        ]);
-    }
+    return response()->json([
+        'quiz_submissions' => $quizSubmissions
+    ]);
+}
+
 }
