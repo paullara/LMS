@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Quiz;
 use App\Models\QuizSubmission;
+use App\Models\ClassPerformance;
 
 class AIEndpointController extends Controller
 {
@@ -24,15 +24,21 @@ class AIEndpointController extends Controller
         }
 
         $validated = $request->validate([
+            'class_id' => 'required|integer',
             'average_score' => 'required|numeric',
             'pass_rate' => 'required|numeric',
             'status' => 'required|string',
         ]);
 
+        // Save to database
+        $performance = ClassPerformance::updateOrCreate(
+            ['class_id' => $validated['class_id']],
+            $validated
+        );
+
         return response()->json([
-            'message' => 'AI analysis received',
-            'data' => $validated
+            'message' => 'AI analysis received and saved',
+            'data' => $performance
         ]);
     }
-
 }
