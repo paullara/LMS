@@ -17,8 +17,12 @@ class AIEndpointController extends Controller
         ]);
     }
 
-    public function storeClassroomPerformance(Request $request) 
+    public function storeClassPerformance(Request $request)
     {
+        if ($request->header('X-AI-TOKEN') !== config('services.ai.token')) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $validated = $request->validate([
             'average_score' => 'required|numeric',
             'pass_rate' => 'required|numeric',
@@ -27,6 +31,8 @@ class AIEndpointController extends Controller
 
         return response()->json([
             'message' => 'AI analysis received',
+            'data' => $validated
         ]);
     }
+
 }

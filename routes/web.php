@@ -213,7 +213,6 @@ Route::post('/video-call/{id}/leave', [VideoCallController::class, 'leave']);
 
 // Anuthorized route
 Route::get('/quizzes', [AIEndpointController::class, 'quizSubmissions']);
-Route::post('/ai/class-performance', [AIEndpointController::class, 'storeClassPerformance']);
 
 // refactor ver
 Route::post('/class/materials/{classrom}', [ClassMaterialController::class, 'store']);
