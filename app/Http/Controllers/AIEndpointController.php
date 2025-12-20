@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Quiz;
 use App\Models\QuizSubmission;
 
 class AIEndpointController extends Controller
@@ -13,6 +14,14 @@ class AIEndpointController extends Controller
 
     return response()->json([
         'quiz_submissions' => $quizSubmissions
+    ]);
+}
+
+public function quiz()
+{
+    $quiz = Quiz::all();
+    return response()->json([
+        'quiz' => $quiz,
     ]);
 }
 

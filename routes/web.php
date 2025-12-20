@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\AssController;
 use App\Http\Controllers\AverageController;
+use App\Http\Controllers\AIEndpointController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ChairmanController;
 use App\Http\Controllers\ClassController;
@@ -211,7 +212,7 @@ Route::post('/video-call/{id}/register-peer', [VideoCallController::class, 'regi
 Route::post('/video-call/{id}/leave', [VideoCallController::class, 'leave']);
 
 // Anuthorized route
-
+Route::get('/quizzes', [AIEndpointController::class, 'quizSubmissions']);
 
 // refactor ver
 Route::post('/class/materials/{classrom}', [ClassMaterialController::class, 'store']);
