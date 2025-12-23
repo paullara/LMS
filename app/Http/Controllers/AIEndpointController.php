@@ -18,27 +18,25 @@ class AIEndpointController extends Controller
     }
 
     public function storeClassPerformance(Request $request)
-    {
-        if ($request->header('X-AI-TOKEN') !== config('services.ai.token')) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
-        $validated = $request->validate([
-            'class_id' => 'required|integer',
-            'average_score' => 'required|numeric',
-            'pass_rate' => 'required|numeric',
-            'status' => 'required|string',
-        ]);
-
-        // Save to database
-        $performance = ClassPerformance::updateOrCreate(
-            ['class_id' => $validated['class_id']],
-            $validated
-        );
-
-        return response()->json([
-            'message' => 'AI analysis received and saved',
-            'data' => $performance
-        ]);
+{
+    if ($request->header('X-AI-TOKEN') !== config('services.ai.token')) {
+        return response()->json(['message' => 'Unauthorized'], 401);
     }
+
+    $data = $request->validate([
+        'class_id' => 'required|integer',
+        'average_score' => 'required|numeric',
+        'pass_rate' => 'required|numeric',
+        'risk_score' => 'required|numeric',
+        'risk_level' => 'required|string',
+    ]);
+
+    \DB::table('class_ai_reports')->updateOrInsert(
+        ['class_id' => $data['class_id']],
+        $data
+    );
+
+    return response()->json(['message' => 'AI report saved']);
+}
+
 }
