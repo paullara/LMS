@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\QuizSubmission;
-use App\Models\ClassAiReport;
+use App\Models\AiReport;
 
 class AIEndpointController extends Controller
 {
@@ -26,11 +26,14 @@ class AIEndpointController extends Controller
             'class_id' => 'required|integer',
             'average_score' => 'required|numeric',
             'pass_rate' => 'required|numeric',
+            'submission_count' => 'required|integer',
+            'score_variance' => 'required|numeric',
             'risk_score' => 'required|numeric',
             'risk_level' => 'required|string',
         ]);
 
-        ClassAiReport::updateOrCreate(
+
+        AiReport::updateOrCreate(
             ['class_id' => $data['class_id']],
             $data
         );

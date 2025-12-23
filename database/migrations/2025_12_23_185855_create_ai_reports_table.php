@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('c_lass_ai_reports', function (Blueprint $table) {
+        Schema::create('ai_reports', function (Blueprint $table) {
             $table->id();
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
             $table->float('average_score');
             $table->float('pass_rate');
             $table->float('risk_score');
             $table->string('risk_level');
+            $table->integer('submission_count');
+            $table->float('score_variance');
             $table->timestamps();
         });
     }
@@ -27,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('c_lass_ai_reports');
+        Schema::dropIfExists('ai_reports');
     }
 };
