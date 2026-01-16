@@ -16,8 +16,18 @@ export default function Quiz({ classId }) {
     const [startsAt, setStartsAt] = useState("");
     const [endsAt, setEndsAt] = useState("");
 
-    const card =
-        "bg-white rounded-2xl shadow-sm border border-gray-200 p-5 transition";
+    const rubricOptions = [
+        "Grammar",
+        "Content",
+        "Structure",
+        "Clarity",
+        "Originality",
+        "Relevance",
+        "Depth of Analysis",
+        "Coherence",
+        "Vocabulary",
+        "Presentation",
+    ];
 
     /* =========================
      FETCH QUIZZES
@@ -46,7 +56,7 @@ export default function Quiz({ classId }) {
                 question_text: "",
                 points: 1,
                 correct_answer: "",
-                rubric: "",
+                rubrics: [],
                 choices: [
                     { text: "", is_correct: false },
                     { text: "", is_correct: false },
@@ -58,6 +68,19 @@ export default function Quiz({ classId }) {
     const updateQuestion = (index, field, value) => {
         const updated = [...questions];
         updated[index][field] = value;
+
+        if (field === "type") {
+            if (value === "essay") {
+                if (!updated[index].rubrics) updated[index].rubrics = [];
+            } else if (value === "mcq") {
+                if (!updated[index].choices)
+                    updated[index].choices = [
+                        { text: "", is_correct: false },
+                        { text: "", is_correct: false },
+                    ];
+            }
+        }
+
         setQuestions(updated);
     };
 
@@ -87,12 +110,25 @@ export default function Quiz({ classId }) {
 
     const createQuiz = async () => {
         try {
+            const processedQuestions = questions.map((q) => {
+                if (q.type === "essay") {
+                    return {
+                        ...q,
+                        points: q.rubrics.reduce(
+                            (sum, r) => sum + (r.points || 0),
+                            0
+                        ),
+                    };
+                }
+                return q;
+            });
+
             await axios.post(`/classes/${classId}/quizzes`, {
                 title,
                 description,
                 starts_at: startsAt || null,
                 ends_at: endsAt || null,
-                questions,
+                questions: processedQuestions,
             });
 
             setTitle("");
@@ -109,12 +145,32 @@ export default function Quiz({ classId }) {
     };
 
     /* =========================
-     UI: LEFT (quiz list) / RIGHT (selected quiz)
+     DRAFT RUBRIC UPDATE
+  ========================== */
+    const updateDraftRubric = (answerId, rubricId, points) => {
+        setSelectedSubmission((prev) => ({
+            ...prev,
+            answers: prev.answers.map((a) =>
+                a.id === answerId
+                    ? {
+                          ...a,
+                          _draft_points: {
+                              ...(a._draft_points || {}),
+                              [rubricId]: points,
+                          },
+                      }
+                    : a
+            ),
+        }));
+    };
+
+    /* =========================
+     UI RENDER
   ========================== */
     return (
         <div className="h-[calc(100vh-64px)] p-3">
             <div className="max-w-7xl mx-auto h-full grid grid-cols-[300px_1fr] gap-6">
-                {/* LEFT PANEL: QUIZ LIST */}
+                {/* LEFT PANEL */}
                 <div className="bg-white rounded-2xl border shadow-sm flex flex-col">
                     <div className="flex justify-between items-center p-4 border-b">
                         <h2 className="font-semibold">Quizzes</h2>
@@ -160,7 +216,7 @@ export default function Quiz({ classId }) {
                     </div>
                 </div>
 
-                {/* RIGHT PANEL: SELECTED QUIZ / CREATE / SUBMISSION */}
+                {/* RIGHT PANEL */}
                 <div className="bg-white rounded-2xl border shadow-sm p-6 overflow-y-auto">
                     {/* CREATE QUIZ */}
                     {showCreate && (
@@ -266,19 +322,126 @@ export default function Quiz({ classId }) {
                                             }
                                         />
 
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            className="w-32 border rounded-lg px-3 py-2"
-                                            value={q.points}
-                                            onChange={(e) =>
-                                                updateQuestion(
-                                                    qIndex,
-                                                    "points",
-                                                    Number(e.target.value)
-                                                )
-                                            }
-                                        />
+                                        {q.type !== "essay" && (
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                className="w-32 border rounded-lg px-3 py-2"
+                                                value={q.points}
+                                                onChange={(e) =>
+                                                    updateQuestion(
+                                                        qIndex,
+                                                        "points",
+                                                        Number(e.target.value)
+                                                    )
+                                                }
+                                            />
+                                        )}
+
+                                        {q.type === "essay" && (
+                                            <div className="space-y-2">
+                                                {(q.rubrics ?? []).map(
+                                                    (r, rIndex) => (
+                                                        <div
+                                                            key={rIndex}
+                                                            className="flex gap-2"
+                                                        >
+                                                            <select
+                                                                className="flex-1 border rounded-lg px-3 py-2"
+                                                                value={r.title}
+                                                                onChange={(
+                                                                    e
+                                                                ) => {
+                                                                    const updated =
+                                                                        [
+                                                                            ...questions,
+                                                                        ];
+                                                                    updated[
+                                                                        qIndex
+                                                                    ].rubrics[
+                                                                        rIndex
+                                                                    ].title =
+                                                                        e.target.value;
+                                                                    setQuestions(
+                                                                        updated
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <option value="">
+                                                                    Select
+                                                                    Rubric
+                                                                </option>
+                                                                {rubricOptions.map(
+                                                                    (
+                                                                        option
+                                                                    ) => (
+                                                                        <option
+                                                                            key={
+                                                                                option
+                                                                            }
+                                                                            value={
+                                                                                option
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                option
+                                                                            }
+                                                                        </option>
+                                                                    )
+                                                                )}
+                                                            </select>
+
+                                                            <input
+                                                                type="number"
+                                                                className="w-24 border rounded-lg px-3 py-2"
+                                                                placeholder="Points"
+                                                                min="0"
+                                                                value={r.points}
+                                                                onChange={(
+                                                                    e
+                                                                ) => {
+                                                                    const updated =
+                                                                        [
+                                                                            ...questions,
+                                                                        ];
+                                                                    updated[
+                                                                        qIndex
+                                                                    ].rubrics[
+                                                                        rIndex
+                                                                    ].points =
+                                                                        Number(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        );
+                                                                    setQuestions(
+                                                                        updated
+                                                                    );
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    )
+                                                )}
+
+                                                <button
+                                                    onClick={() => {
+                                                        const updated = [
+                                                            ...questions,
+                                                        ];
+                                                        updated[
+                                                            qIndex
+                                                        ].rubrics.push({
+                                                            title: "",
+                                                            points: 0,
+                                                        });
+                                                        setQuestions(updated);
+                                                    }}
+                                                    className="text-sm text-blue-600"
+                                                >
+                                                    + Add Rubric
+                                                </button>
+                                            </div>
+                                        )}
 
                                         {/* MCQ */}
                                         {q.type === "mcq" && (
@@ -323,6 +486,7 @@ export default function Quiz({ classId }) {
                                                         </div>
                                                     )
                                                 )}
+
                                                 <button
                                                     onClick={() =>
                                                         addChoice(qIndex)
@@ -344,22 +508,6 @@ export default function Quiz({ classId }) {
                                                     updateQuestion(
                                                         qIndex,
                                                         "correct_answer",
-                                                        e.target.value
-                                                    )
-                                                }
-                                            />
-                                        )}
-
-                                        {/* Essay */}
-                                        {q.type === "essay" && (
-                                            <textarea
-                                                className="w-full border rounded-lg px-3 py-2 bg-amber-50"
-                                                placeholder="Rubric (for instructors)"
-                                                value={q.rubric}
-                                                onChange={(e) =>
-                                                    updateQuestion(
-                                                        qIndex,
-                                                        "rubric",
                                                         e.target.value
                                                     )
                                                 }
@@ -392,32 +540,12 @@ export default function Quiz({ classId }) {
                         </div>
                     )}
 
-                    {/* VIEW SUBMISSIONS / GRADING */}
+                    {/* VIEW SUBMISSIONS */}
                     {!showCreate && selectedQuiz && !selectedSubmission && (
                         <div className="space-y-4">
                             <h2 className="text-xl font-semibold">
                                 {selectedQuiz.title} – Submissions
                             </h2>
-
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        await axios.post(
-                                            `/submissions/${selectedQuiz.id}/return`
-                                        );
-                                        alert(
-                                            "Returned to student successfully!"
-                                        );
-                                        fetchQuizzes();
-                                    } catch (err) {
-                                        console.error(err);
-                                        alert("Failed to return.");
-                                    }
-                                }}
-                                className="px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                            >
-                                Return to Student
-                            </button>
 
                             <div className="space-y-2 mt-2">
                                 {selectedQuiz.submissions.map((sub) => (
@@ -455,7 +583,14 @@ export default function Quiz({ classId }) {
                                     const isGraded = saved !== null;
                                     const hasChanges =
                                         answer._draft_points !== undefined &&
-                                        answer._draft_points !== saved;
+                                        JSON.stringify(answer._draft_points) !==
+                                            JSON.stringify(
+                                                answer.rubric_scores
+                                            );
+
+                                    const totalDraftPoints = Object.values(
+                                        answer._draft_points || {}
+                                    ).reduce((sum, p) => sum + p, 0);
 
                                     return (
                                         <div
@@ -472,74 +607,100 @@ export default function Quiz({ classId }) {
                                             {answer.question.type ===
                                                 "essay" && (
                                                 <div className="mt-3 flex flex-wrap items-center gap-3">
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max={
-                                                            answer.question
-                                                                .points
-                                                        }
-                                                        value={draft}
-                                                        className="w-32 px-3 py-2 border rounded-lg"
-                                                        onChange={(e) =>
-                                                            setSelectedSubmission(
-                                                                (prev) => ({
-                                                                    ...prev,
-                                                                    answers:
-                                                                        prev.answers.map(
-                                                                            (
-                                                                                a
-                                                                            ) =>
-                                                                                a.id ===
-                                                                                answer.id
-                                                                                    ? {
-                                                                                          ...a,
-                                                                                          _draft_points:
-                                                                                              Number(
-                                                                                                  e
-                                                                                                      .target
-                                                                                                      .value
-                                                                                              ),
-                                                                                      }
-                                                                                    : a
-                                                                        ),
-                                                                })
-                                                            )
-                                                        }
-                                                    />
+                                                    {(
+                                                        answer.question
+                                                            .rubrics || []
+                                                    ).map((r) => (
+                                                        <div
+                                                            key={r.id}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <span className="w-32">
+                                                                {r.title}
+                                                            </span>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max={r.points}
+                                                                value={
+                                                                    answer
+                                                                        ._draft_points?.[
+                                                                        r.id
+                                                                    ] ??
+                                                                    answer
+                                                                        .rubric_scores?.[
+                                                                        r.id
+                                                                    ] ??
+                                                                    ""
+                                                                }
+                                                                className="w-20 border rounded px-2 py-1"
+                                                                onChange={(e) =>
+                                                                    updateDraftRubric(
+                                                                        answer.id,
+                                                                        r.id,
+                                                                        Number(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    )
+                                                                }
+                                                            />
+                                                        </div>
+                                                    ))}
+
                                                     <button
                                                         disabled={!hasChanges}
                                                         onClick={async () => {
-                                                            await axios.post(
-                                                                `/submissions/${selectedSubmission.id}/grade-essay`,
-                                                                {
-                                                                    answer_id:
-                                                                        answer.id,
-                                                                    points_awarded:
-                                                                        answer._draft_points,
-                                                                }
-                                                            );
-                                                            setSelectedSubmission(
-                                                                (prev) => ({
-                                                                    ...prev,
-                                                                    answers:
-                                                                        prev.answers.map(
-                                                                            (
-                                                                                a
-                                                                            ) =>
-                                                                                a.id ===
-                                                                                answer.id
-                                                                                    ? {
-                                                                                          ...a,
-                                                                                          points_awarded:
-                                                                                              answer._draft_points,
-                                                                                          _draft_points:
-                                                                                              undefined,
-                                                                                      }
-                                                                                    : a
-                                                                        ),
-                                                                })
-                                                            );
+                                                            try {
+                                                                // Convert _draft_points to array for backend
+                                                                const payload =
+                                                                    {
+                                                                        answer_id:
+                                                                            answer.id,
+                                                                        rubrics:
+                                                                            answer._draft_points ||
+                                                                            {}, // <--- matches backend
+                                                                    };
+
+                                                                const res =
+                                                                    await axios.post(
+                                                                        `/submissions/${selectedSubmission.id}/grade-essay`,
+                                                                        payload
+                                                                    );
+
+                                                                // Update frontend state after save
+                                                                setSelectedSubmission(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        answers:
+                                                                            prev.answers.map(
+                                                                                (
+                                                                                    a
+                                                                                ) =>
+                                                                                    a.id ===
+                                                                                    answer.id
+                                                                                        ? {
+                                                                                              ...a,
+                                                                                              points_awarded:
+                                                                                                  res
+                                                                                                      .data
+                                                                                                      .total, // total points returned by backend
+                                                                                              _draft_points:
+                                                                                                  undefined,
+                                                                                          }
+                                                                                        : a
+                                                                            ),
+                                                                    })
+                                                                );
+                                                            } catch (err) {
+                                                                console.error(
+                                                                    err
+                                                                );
+                                                                alert(
+                                                                    "Failed to save grade. Check console for details."
+                                                                );
+                                                            }
                                                         }}
                                                         className={`px-3 py-2 rounded-lg text-sm ${
                                                             hasChanges

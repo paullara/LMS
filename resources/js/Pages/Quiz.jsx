@@ -242,17 +242,42 @@ export default function StudentQuiz({ classId }) {
 
                                         {q.type === "essay" && (
                                             <div className="space-y-3">
-                                                {/* Rubric */}
-                                                {q.rubric && (
-                                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                                        <p className="text-sm font-semibold text-amber-800 mb-1">
-                                                            Grading Rubric
-                                                        </p>
-                                                        <p className="text-sm text-amber-700 whitespace-pre-line">
-                                                            {q.rubric}
-                                                        </p>
-                                                    </div>
-                                                )}
+                                                {/* Rubrics */}
+                                                {q.rubrics &&
+                                                    q.rubrics.length > 0 && (
+                                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                                            <p className="text-sm font-semibold text-amber-800 mb-2">
+                                                                Grading Rubrics
+                                                            </p>
+                                                            <div className="space-y-1">
+                                                                {q.rubrics.map(
+                                                                    (
+                                                                        rubric,
+                                                                        index
+                                                                    ) => (
+                                                                        <div
+                                                                            key={
+                                                                                index
+                                                                            }
+                                                                            className="flex justify-between text-sm text-amber-700"
+                                                                        >
+                                                                            <span>
+                                                                                {
+                                                                                    rubric.title
+                                                                                }
+                                                                            </span>
+                                                                            <span>
+                                                                                {
+                                                                                    rubric.points
+                                                                                }{" "}
+                                                                                points
+                                                                            </span>
+                                                                        </div>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                 {/* Answer box */}
                                                 <textarea

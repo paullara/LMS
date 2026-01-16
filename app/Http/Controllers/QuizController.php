@@ -24,26 +24,36 @@ class QuizController extends Controller
         ]);
 
         foreach ($request->questions as $q) {
-            $question = Question::create([
-                'quiz_id' => $quiz->id,
-                'type' => $q['type'],
-                'question_text' => $q['question_text'],
-                'correct_answer' => $q['correct_answer'] ?? null,
-                'points' => $q['points'],
-                'rubric' => $q['rubric'] ?? null,
-            ]);
+    $question = Question::create([
+        'quiz_id' => $quiz->id,
+        'type' => $q['type'],
+        'question_text' => $q['question_text'],
+        'correct_answer' => $q['correct_answer'] ?? null,
+        'points' => $q['points'] ?? null
+    ]);
 
-            // MCQ choices
-            if ($q['type'] === 'mcq') {
-                foreach ($q['choices'] as $choice) {
-                    Choice::create([
-                        'question_id' => $question->id,
-                        'choice_text' => $choice['text'],
-                        'is_correct' => $choice['is_correct'],
-                    ]);
-                }
-            }
+    // store MCQ choices
+    if ($q['type'] === 'mcq') {
+        foreach ($q['choices'] as $choice) {
+            Choice::create([
+                'question_id' => $question->id,
+                'choice_text' => $choice['text'],
+                'is_correct' => $choice['is_correct'],
+            ]);
         }
+    }
+
+    // store essay rubrics
+    if ($q['type'] === 'essay' && !empty($q['rubrics'])) {
+        foreach ($q['rubrics'] as $rubric) {
+            $question->rubrics()->create([
+                'title' => $rubric['title'],
+                'points' => $rubric['points'],
+            ]);
+        }
+    }
+}
+
 
         return response()->json($quiz->load('questions.choices'), 201);
     }
@@ -54,7 +64,7 @@ class QuizController extends Controller
         return Quiz::where('class_id', $classId)
             ->with([
                 'submissions.student',
-                'submissions.answers.question'
+                'submissions.answers.question.rubrics'
             ])
             ->get();
     }
@@ -64,7 +74,7 @@ class QuizController extends Controller
     {
         $student = Auth::user();
         $quizzes = Quiz::where('class_id', $classId)
-        ->with('questions.choices')
+        ->with('questions.choices', 'questions.rubrics')
         ->get()
         ->map(function ($quiz) use ($student) {
             $quiz->submitted = QuizSubmission::where('quiz_id', $quiz->id)

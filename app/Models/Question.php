@@ -24,4 +24,9 @@ class Question extends Model
     {
         return $this->hasMany(Choice::class);
     }
+
+    public function rubrics()
+    {
+        return $this->hasMany(QuestionRubric::class);
+    }
 }
